@@ -115,6 +115,6 @@ python -m unittest discover -s tests -v
 
 Tests cover chord membership, root-following bass, exact eight-bar MIDI length, paired note events, deterministic generation, WAV file validity, output naming, and failure cleanup. They cannot determine whether a groove sounds good. See [CONTRIBUTING.md](CONTRIBUTING.md) for the DAW/listening checks still needed.
 
-The drag/variety update passed 26 public test groups on Windows. Native tests exercise real Shell file data, Unicode filenames, format enumeration, and cleanup; the interactive drag loop is substituted in automated tests. Actual drops into Explorer/Desktop and individual DAWs still require manual testing. The diversity audit above is separate from the normal test suite.
+The drag/variety update passed 26 public test groups on Windows. Native tests exercise real Shell file data, Unicode filenames, format enumeration, and cleanup; the interactive drag loop is substituted in automated tests. A user confirmed Drag MIDI worked in a manual test on the development Windows PC; the specific destination was not recorded. Broader destination and DAW track-import compatibility still needs testing. The diversity audit above is separate from the normal test suite.
 
 MIT licensed. Please report the genre, settings, seed, OS, Python version, DAW/version, and the smallest reproducible problem. Do not upload private projects, presets, account data, or commercial sample packs.
