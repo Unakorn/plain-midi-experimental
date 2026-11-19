@@ -11,7 +11,9 @@ Manual testing still needed:
 3. Audition bass/sub harmony, lead phrasing, chord transitions and the loop seam. Listen at sparse and dense settings, with straight and swung timing.
 4. Keep a bass or lead part and generate a variation. Confirm the kept notes stay unchanged. Changing harmony should require unlocking pitched parts.
 5. Generate twice and verify two distinct Desktop filenames and companion folders. Confirm existing work was not overwritten.
+   Verify the new seeds produce different rhythms/melodies; enable Repeat seed to reproduce a specific idea. Keep expected genre anchors in mind when comparing.
 6. For developers with the exact compatible private FLP layout: open the exported copy, inspect all sample slots and effects, verify tempo during playback, listen through the full eight bars, and confirm save/reopen works. The public repo has no private fixture and cannot exercise this path on its own.
+7. On Windows, drag the Drag MIDI button into Explorer, Desktop and your DAW. Check one complete MIDI file arrives, all nine parts import correctly, the original remains available, and Escape cancels cleanly. Report the destination application and whether it runs as administrator when reporting a rejected drop.
 
 Bug reports should include OS, Python and DAW versions, settings and seed, expected behavior, actual behavior, and a minimal MIDI or sanitized reproduction if useful. Avoid uploading commercial samples or private FLPs/presets.
 

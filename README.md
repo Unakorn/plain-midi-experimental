@@ -30,6 +30,10 @@ On Windows you can also double-click **Launch Plain MIDI.cmd**.
 
 Choose a genre, key and tempo, then **Generate to Desktop**. The public release saves a randomly named **`.mid` file** directly on your Desktop, with its WAV kit and individual parts in `Desktop/Plain MIDI Files/<matching name>/`. It does not require a private FL Studio template.
 
+Generate chooses a fresh seed by default. **Regenerate** always makes a fresh idea. Enable **Repeat seed** when you want Generate to reproduce the displayed seed.
+
+On Windows, hold **Drag MIDI** after generation and drag into your DAW, Desktop, or a folder. It offers one saved multitrack `.mid` containing all nine parts, using native Windows file dragging with copy-only behavior. The session-named source stays in the companion folder. Escape cancels. A receiving DAW controls track import; MIDI does not contain the instrument presets, WAVs, or FLP automation. Other platforms can import the saved MIDI directly; native drag-out is currently Windows-only.
+
 The first kit needs a few seconds to synthesize. To prepare reusable kits for quicker exports:
 
 ```sh
@@ -53,16 +57,21 @@ python make.py --help
 
 Use 1, 2, 4, or 8 scale degrees, such as `1 6 3 7`, or explicit chords such as `Am F C G`. The chords divide the eight bars equally. Basic triads, suspended chords, sevenths, and several extensions are supported; `CHORDS` in `generator.py` lists them.
 
-Bass and sub-bass follow the chord roots. Other pitched parts use chord tones with their own rhythms. Density controls how busy parts get; swing delays offbeat positions; variation adds phrase-ending fills and melodic resolution. Keep selected parts while rerolling others. Kept melodic parts require unchanged harmony.
+Bass and sub-bass follow the chord roots. Other pitched parts use chord tones with their own rhythms. Density controls how busy parts get; swing delays offbeat positions; variation adds alternate phrase endings and details. New seeds change rhythms and melodies even at zero variation. Keep selected parts while rerolling others. Kept melodic parts require unchanged harmony.
 
-The same settings and seed reproduce a generated idea. Exact notes are saved in `arrangement.json`; use its saved MIDI to retain any manually edited or previously kept parts. Loading a JSON file through `--config` reads settings and regenerates notes.
+The same settings and seed reproduce a generated idea within one engine version. Exact notes are saved in `arrangement.json`; use its saved MIDI to retain any manually edited or previously kept parts. Loading a JSON file through `--config` reads settings and regenerates notes. Seeds from an older engine can produce different notes after an update, so keep saved MIDI for exact recall.
+
+Two-bar rhythm cells and chord-tone contours form A / A-prime / B / A phrases. Roles and percussion families have independent seeded choices. The EDM kick/backbeat, sustained pad, block chords and sub foundation stay deliberately simple; bass, lead, pluck, arpeggio and percussion get fresh phrasing.
+
+A deterministic audit of **1,000 seeds per genre (8,000 arrangements)** found no repeated complete arrangements, drum structures, lead rhythms, bass rhythms, or pluck structures at the default settings. Fingerprints ignore velocities and drum sound variants and quantize timing to sixteenths. Individual pitch contours and arpeggios sometimes repeat. This is a finite sample, not a guaranteed 1% repeat probability or a measure of perceived musical similarity. See [the complete measurements](validation/variety_v2_metrics.json). Reproduce with `python tests/test_variety_v2.py --audit` (writes `variety_v2_metrics.json` in the repository root).
 
 | File | Change here |
 |---|---|
-| `recipes.json` | Genre tempos, progression defaults, rhythmic beat positions |
-| `generator.py` | Chords, voicings, motifs, MIDI writing |
+| `recipes.json` | Genre tempos, progression defaults, beat anchors and candidate rhythms |
+| `generator.py` | Rhythm cells, phrase plans, chords, melodic contours, MIDI writing |
 | `drum_synth.py` | Drum synthesis, tuning, decay, brightness |
 | `workflow.py` | Session saving, Desktop names, part locks, kit cache |
+| `file_drag.py` | Native Windows copy-only file dragging |
 
 ## Drum notes
 
@@ -105,5 +114,7 @@ python -m unittest discover -s tests -v
 ```
 
 Tests cover chord membership, root-following bass, exact eight-bar MIDI length, paired note events, deterministic generation, WAV file validity, output naming, and failure cleanup. They cannot determine whether a groove sounds good. See [CONTRIBUTING.md](CONTRIBUTING.md) for the DAW/listening checks still needed.
+
+The drag/variety update passed 26 public test groups on Windows. Native tests exercise real Shell file data, Unicode filenames, format enumeration, and cleanup; the interactive drag loop is substituted in automated tests. Actual drops into Explorer/Desktop and individual DAWs still require manual testing. The diversity audit above is separate from the normal test suite.
 
 MIT licensed. Please report the genre, settings, seed, OS, Python version, DAW/version, and the smallest reproducible problem. Do not upload private projects, presets, account data, or commercial sample packs.

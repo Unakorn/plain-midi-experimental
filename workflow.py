@@ -181,6 +181,13 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
     staging = Path(tempfile.mkdtemp(prefix=".building-", dir=parent))
     try:
         write_bundle(arrangement, staging)
+        # A permanent, session-named copy makes external drops identifiable.
+        # It stays with the saved session after this window closes.
+        midi_name = name + ".mid"
+        if midi_name != "arrangement.mid":
+            with (staging / midi_name).open("xb") as output:
+                with (staging / "arrangement.mid").open("rb") as source:
+                    shutil.copyfileobj(source, output)
         from drum_synth import build_kit
         # Kit timbre is fixed per genre. New MIDI variations keep the same kit.
         cached = _cached_kit(arrangement["genre"]) if reuse_kits else None
@@ -207,6 +214,7 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
             f"Key: {arrangement['key']} {arrangement['mode']} | Tempo: {arrangement['bpm']} BPM",
             f"Seed: {arrangement['seed']} | Eight bars of 4/4", "",
             "arrangement.mid: all instrument parts in one Type-1 MIDI file.",
+            f"{midi_name}: identical MIDI, named for drag-and-drop from the app.",
             "parts/: separate MIDI files for your instrument channels.",
             "arrangement.json: exact notes, settings, and chord progression; editable.",
             "kit/: 32 synthesized, dry WAV drum sounds and the MIDI note map.",
@@ -262,6 +270,7 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
         raise
     status("Ready — MIDI, drum kit, and editable source files saved.")
     return {"folder": str(final), "arrangement": arrangement,
+            "midi": str(final / midi_name),
             "preview": str(final / "preview.wav") if audio else None,
             "flp": str(final / "Automation Ready.flp") if flp else None,
             "project": str(final / ("Automation Ready.flp" if flp else "arrangement.mid"))}

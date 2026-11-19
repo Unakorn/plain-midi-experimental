@@ -197,30 +197,167 @@ def _thin_hits(hits, density, rng):
     return [h for i, h in enumerate(hits) if i == 0 or rng.random() < .3 + density]
 
 
+# Each cell lasts two beats. Choosing a small number of coherent cells gives a
+# seed a real rhythmic identity without scattering independent random notes.
+# Recipe positions remain part of the vocabulary, alongside these variations.
+RHYTHM_CELLS = {
+    "hook": ((0,), (.5,), (0, 1), (0, 1.5), (.5, 1.5),
+             (0, .75), (.5, 1), (0, .5, 1.5), (0, .75, 1.5), (.75, 1.5)),
+    "bounce": ((.5,), (.5, 1.5), (.5, 1.25), (0, 1.5), (.5, 1.75),
+               (.5, .75, 1.5), (.5, 1.5, 1.75), (0, .75, 1.5), (.75, 1.5)),
+    "rolling": ((.5, .75, 1.5), (.5, 1.5, 1.75), (.5, .75, 1.5, 1.75),
+                (0, .5, 1.5), (.5, 1, 1.5), (.5, 1.25, 1.75), (.5, 1.5)),
+    "sparse": ((0,), (.5,), (1,), (0, 1.5), (.5, 1.5), (0, .75),
+               (.75, 1.5), (0, 1.75), (.5, 1.25)),
+    "pulse": ((0, 1), (0, .5, 1), (0, 1, 1.5), (0, .75, 1),
+              (0, 1, 1.75), (0,), (0, .5, 1.5)),
+}
+_BASS_FEEL = {"trance": "bounce", "hard_dance": "bounce",
+              "hard_trance": "rolling", "house": "hook", "hard_house": "bounce",
+              "hardstyle": "pulse", "pop": "hook", "rap": "sparse"}
+
+
+def _rhythm_phrase(c, r, role, rng):
+    """An eight-beat idea, composed from four reusable half-bar cells."""
+    if role == "BASS":
+        feel, recipe = _BASS_FEEL[c["genre"]], r["bass"]
+    elif role == "CHORDS":
+        feel, recipe = "bounce" if c["genre"] in ("house", "hard_house") else "sparse", r["chord"]
+    else:
+        feel = "sparse" if c["genre"] in ("rap", "pop") else "hook"
+        if role == "PLUCK" and c["genre"] in ("house", "hard_house", "hard_dance"):
+            feel = "bounce"
+        recipe = r["lead"] if role == "LEAD" else r["pluck"]
+    hits = []
+    for cell in range(4):
+        recipe_cell = tuple(h % 2 for h in recipe if int(h // 2) == cell % 2)
+        choices = RHYTHM_CELLS[feel] + ((recipe_cell,) if recipe_cell else ())
+        chosen = list(rng.choice(choices))
+        if c["density"] < .5:
+            chosen = [h for j, h in enumerate(chosen)
+                      if j == 0 or rng.random() < c["density"] * 1.5]
+        elif c["density"] > .65 and rng.random() < (c["density"]-.5):
+            chosen.append(rng.choice((.25, .75, 1.25, 1.75)))
+        hits.extend(cell * 2 + h for h in chosen)
+    return sorted(set(hits))
+
+
+def _arp_phrase(c, r, rng):
+    step = r["arp_step"] * (2 if c["density"] < .35 else 1)
+    positions = [j*step for j in range(round(8/step))]
+    # A different rest window and pulse mask for every idea. The pulse remains
+    # on the genre's eighth/sixteenth grid; it is not timing humanization.
+    rest_cell = rng.randrange(3)
+    mask = rng.choice(((1, 1, 1, 0), (1, 0, 1, 1), (1, 1, 0, 1), (1, 1, 1, 1)))
+    hits = [h for j, h in enumerate(positions)
+            if (int(h//2) != rest_cell or c["density"] > .8)
+            and mask[j % 4]]
+    if not any(h >= 4 for h in hits):
+        hits.append(6)
+    return sorted(set(hits))
+
+
+def _phrase_plan(c, make_phrase, rng):
+    """A / A-prime / B / A-ending: repetition within a fresh seeded idea."""
+    a, b = make_phrase(), make_phrase()
+    a_prime, ending = list(a), list(a)
+    if c["variation"] > 0:
+        detail = make_phrase()
+        tail = 6 if c["variation"] < .65 else 4
+        a_prime = [h for h in a if h < tail] + [h for h in detail if h >= tail]
+        # Finishing earlier leaves a little space before looping around.
+        ending = [h for h in a if h < 6] + [rng.choice((6, 6.5, 7))]
+        if c["variation"] > .65:
+            ending.append(7.5)
+    return (a, sorted(set(a_prime)), b, sorted(set(ending)))
+
+
+def _drum_phrase(c, r, family, rng):
+    """Two bars of percussion. Genre-defining anchors are never randomized away."""
+    edm = c["genre"] not in ("pop", "rap")
+    recipe_phrase = [bar*4+h for bar in range(2) for h in r["drums"].get(family, [])]
+    if family == "kick" and edm:
+        return sorted(set(range(8)) | set(recipe_phrase))
+    if family == "snare":
+        return sorted({1, 3, 5, 7} | set(recipe_phrase))
+    if family == "clap":
+        return sorted(set(recipe_phrase) | ({1, 3, 5, 7} if edm or rng.randrange(3) == 0 else set()))
+    hits = []
+    for bar in range(2):
+        if family == "kick":
+            anchors = [0, 2] if c["genre"] == "pop" else [0]
+            pool = (.75, 1.5, 2.75, 3.5, 3.75) if c["genre"] == "pop" else (.75, 1.5, 1.75, 2.5, 2.75, 3.5)
+            count = 1 + int(c["density"] >= .4) + int(c["density"] > .8)
+            local = anchors + rng.sample(pool, count)
+        elif family == "open_hat":
+            if edm:
+                local = [.5] + [h for h in (1.5, 2.5, 3.5)
+                                if rng.random() < .35 + c["density"]*.6]
+            else:
+                candidates = (1.5, 3.5) if c["genre"] == "pop" else (.75, 2.75, 3.5)
+                local = [rng.choice(candidates)]
+        elif family == "closed_hat":
+            local = []
+            for half in range(2):
+                cells = ((0, 1), (0, .5, 1), (0, 1, 1.5), (0, .5, 1, 1.5),
+                         (0, .75, 1, 1.75), (0, .25, 1, 1.25))
+                if c["genre"] in ("hard_dance", "hard_trance", "hard_house", "rap"):
+                    cells += ((0, .25, .75, 1, 1.25, 1.75),)
+                cell = rng.choice(cells)
+                local.extend(half*2+h for h in cell
+                             if h in (0, 1) or rng.random() < .35+c["density"])
+                if c["density"] > .8:
+                    local.extend((half*2+.25, half*2+1.75))
+        elif family == "shaker":
+            cell = rng.choice(((.25, 1.25), (.75, 1.75), (.25, .75, 1.75),
+                               (.25, 1.25, 1.75), (.5, 1.5)))
+            local = [half*2+h for half in range(2) for h in cell]
+            local = _thin_hits(local, c["density"], rng)
+        elif family == "ride":
+            local = list(rng.choice(((0, 2), (.5, 2.5), (1.5, 3.5), (0,), (2,))))
+        else:  # Tom fills are used only at the ends of four-bar phrases.
+            pool = sorted(set(r["drums"].get("tom", []) + [2.5, 2.75, 3, 3.25, 3.5, 3.75]))
+            count = 1 + int(c["density"] >= .4) + int(c["variation"] > .6)
+            local = sorted(rng.sample(pool, count))
+        # User-editable recipes are one of the seed's choices, not a rhythm
+        # that every seed is forced to repeat. Preserve kick anchors in pop/rap.
+        recipe_hits = r["drums"].get(family, [])
+        if recipe_hits and family != "tom" and rng.randrange(5) == 0:
+            local = list(recipe_hits)
+            if family == "kick":
+                local = sorted(set(local + anchors))
+        hits.extend(bar*4+h for h in local)
+    return sorted(set(hits))
+
+
 def _drums(c, r):
-    rng = _rng(c, "DRUMS")
+    rng = _rng(c, "DRUMS:velocity")
     notes = []
     velocities = {"kick": 103, "snare": 94, "clap": 70, "closed_hat": 63,
                   "open_hat": 59, "ride": 48, "shaker": 43, "tom": 73}
-    # A two-bar rhythm is repeated. Variation only changes phrase endings.
-    family_hits = {family: _thin_hits(r["drums"].get(family, []), c["density"], rng)
-                   for family in DRUM_MAP}
+    families = {}
+    for family in DRUM_MAP:
+        rhythm_rng = _rng(c, "DRUMS:"+family)
+        make = lambda: _drum_phrase(c, r, family, rhythm_rng)
+        a, b = make(), make()
+        detail = make()
+        # Keep kick/snare/clap anchors intact, including in the final bar.
+        a_prime = ([h for h in a if h < 6] + [h for h in detail if h >= 6]
+                   if c["variation"] > 0 else a)
+        families[family] = (a, a_prime, b, a_prime)
     for bar in range(8):
         for family, base in DRUM_MAP.items():
-            hits = list(family_hits[family])
+            phrase = families[family][bar//2]
+            hits = [h % 4 for h in phrase if int(h//4) == bar % 2]
             if family == "ride" and bar not in (2, 6, 7):
                 hits = []
             if family == "tom":
                 hits = hits if bar in (3, 7) else []
-                if bar in (3, 7) and c["variation"] > .45:
-                    hits += [3.25, 3.5]
-            if family == "closed_hat" and c["density"] > .75:
-                hits += [h+.25 for h in hits if h+.25 < 4]
-            if family == "closed_hat" and bar == 7 and c["variation"] > .6:
-                hits += [3.25, 3.75]
             # Leave room for an open hat instead of triggering closed and open together.
             if family == "closed_hat":
-                hits = [h for h in hits if h not in family_hits["open_hat"]]
+                open_hits = {h % 4 for h in families["open_hat"][bar//2]
+                             if int(h//4) == bar % 2}
+                hits = [h for h in hits if h not in open_hits]
             for j, hit in enumerate(sorted(set(hits))):
                 variant = 0
                 if c["drum_variants"]:
@@ -243,22 +380,51 @@ def _drums(c, r):
     for a, b in zip(hat_notes, hat_notes[1:]):
         if a["family"] == "open_hat":
             a["duration"] = min(a["duration"], max(1/PPQ, b["start"]-a["start"]))
+    # Keep note-off timing consistent when the four sound variants are toggled
+    # off. Otherwise overlapping tom samples shorten only in single-sound mode.
+    for family in DRUM_MAP:
+        family_notes = sorted((n for n in notes if n["family"] == family), key=lambda n:n["start"])
+        for a, b in zip(family_notes, family_notes[1:]):
+            a["duration"] = min(a["duration"], b["start"]-a["start"])
     return notes
 
 
 def _melody(c, r, progression, role):
-    rng = _rng(c, role)
+    rng = _rng(c, role+":velocity")
+    rhythm_rng, pitch_rng = _rng(c, role+":rhythm"), _rng(c, role+":pitch")
     notes = []
-    motif = [0, 1, 2, 1, 0, 2, 1, 0]
-    rotation = rng.randrange(3)
-    motif = [(n + rotation) % 3 for n in motif]
+    make = (lambda: _arp_phrase(c, r, rhythm_rng)) if role == "ARPEGGIO" else (lambda: _rhythm_phrase(c, r, role, rhythm_rng))
+    phrases = _phrase_plan(c, make, rhythm_rng)
+    # A small bounded walk creates a singable contour. Store positions by
+    # half-beat so repeated rhythm cells remember their melodic identity.
+    contours = []
+    for _ in range(2):
+        contour, degree = [], pitch_rng.randrange(3)
+        for i in range(16):
+            if i:
+                degree = max(0, min(5, degree+pitch_rng.choice((-1, -1, 0, 1, 1, 2))))
+            contour.append(degree)
+        contours.append(contour)
+    contour_a, contour_b = contours
+    contour_prime = list(contour_a)
+    if c["variation"] > 0:
+        for i in range(12, 16):
+            contour_prime[i] = max(0, min(5, contour_prime[i]+pitch_rng.choice((-1, 1))))
+    phrase_contours = (contour_a, contour_prime, contour_b, contour_a)
+    arp_vocabulary = ((0, 1, 2, 1), (0, 2, 1, 2), (2, 1, 0, 1),
+                      (0, 1, 2, 0), (0, 2, 0, 1), (1, 0, 2, 0),
+                      (0, 1, 2), (0, 2, 1), (1, 0, 2),
+                      (1, 2, 0), (2, 0, 1), (2, 1, 0))
+    arp_a, arp_b = pitch_rng.choice(arp_vocabulary), pitch_rng.choice(arp_vocabulary)
+    arp_orders = (arp_a, arp_a, arp_b, arp_a)
+    gate = pitch_rng.choice((.55, .7, .85))
     voice = None
-    last_lead = 69
     for chord in progression:
         start, length = chord["bar"]*4, chord["bars"]*4
         pcs = chord["pitch_classes"]
         root_pc = chord["root"] % 12
-        voice = _voicing(pcs, voice)
+        if role in ("PAD", "CHORDS"):
+            voice = _voicing(pcs, voice)
         if role == "PAD":
             for p in voice:
                 _add(notes, start, length-.04, p, 47+rng.randint(-3,3))
@@ -274,45 +440,51 @@ def _melody(c, r, progression, role):
             continue
         for local_bar in range(chord["bars"]):
             bar_start = start + local_bar*4
+            bar = int(bar_start//4)
+            phrase = phrases[bar//2]
+            hits = [h % 4 for h in phrase if int(h//4) == bar % 2]
             if role == "BASS":
-                hits = _thin_hits(r["bass"], c["density"], rng)
                 pitch = _near(root_pc, 45, 36, 55)
                 for j, hit in enumerate(hits):
                     next_hit = hits[j+1] if j+1 < len(hits) else 4
-                    duration = min(.65, next_hit-hit-.03)
+                    duration = min(.65, (next_hit-hit)*gate)
                     _add(notes, _swing(bar_start+hit,c["swing"]), max(.1,duration), pitch, 85+rng.randint(-4,4))
             elif role == "CHORDS":
-                for hit in _thin_hits(r["chord"],c["density"],rng):
+                for hit in hits:
                     for p in voice:
                         _add(notes, _swing(bar_start+hit,c["swing"]), .32, p, 62+rng.randint(-3,3))
             elif role == "ARPEGGIO":
-                step = r["arp_step"] * (2 if c["density"] < .35 else 1)
-                # Short, repeating bursts leave breathing space for the lead.
-                for j in range(round(4/step)):
-                    hit = j*step
-                    if 1.5 <= hit < 2.5 and c["density"] < .8:
-                        continue
-                    p = _near(pcs[j % len(pcs)],72,60,84)
-                    _add(notes,_swing(bar_start+hit,c["swing"]),step*.65,p,46+(j%3)*3)
-            else:
-                pattern = r["lead"] if role == "LEAD" else r["pluck"]
-                hits = _thin_hits(pattern,c["density"],rng)
+                arp_order = arp_orders[bar//2]
                 for j, hit in enumerate(hits):
-                    idx = motif[(j + (int(bar_start/4) % 2)*2) % len(motif)] % len(pcs)
-                    if c["variation"] > 0 and int(bar_start/4) == 7 and j == len(hits)-1:
-                        idx = 0  # End the eight-bar phrase on the current chord root.
-                    pc = pcs[idx]
-                    p = _near(pc,last_lead if role == "LEAD" else 72,60 if role=="LEAD" else 64,83 if role=="LEAD" else 88)
-                    if role == "LEAD":
-                        last_lead = p
+                    idx = arp_order[j % len(arp_order)] % len(pcs)
+                    p = _near(pcs[idx],72,60,84)
+                    next_hit = hits[j+1] if j+1 < len(hits) else 4
+                    duration = min(.3, r["arp_step"]*.65, (next_hit-hit)*.65)
+                    _add(notes,_swing(bar_start+hit,c["swing"]),duration,p,46+(j%3)*3)
+            else:
+                for j, hit in enumerate(hits):
+                    contour = phrase_contours[bar//2]
+                    degree = contour[min(15, int(((bar % 2)*4+hit)*2))]
+                    if bar == 7 and j == len(hits)-1:
+                        degree = 0  # Resolve to the current chord's root.
+                    pc = pcs[degree % len(pcs)]
+                    root = _near(root_pc, 65 if role == "LEAD" else 72, 60, 76)
+                    target = root + (degree//len(pcs))*12 + (pc-root_pc) % 12
+                    p = _near(pc,target,60 if role=="LEAD" else 64,83 if role=="LEAD" else 88)
                     next_hit = hits[j+1] if j+1<len(hits) else 4
                     length_limit = .2 if role == "PLUCK" or c["lead_style"] == "pluck" else 1.35
-                    duration = min(length_limit,max(.1,next_hit-hit-.08))
+                    duration = min(length_limit,max(.1,(next_hit-hit)*gate))
                     _add(notes,_swing(bar_start+hit,c["swing"]),duration,p,(76 if role=="LEAD" else 58)+rng.randint(-4,4))
     # Notes stop at harmonic boundaries, including swung late-bar pickups.
     for note in notes:
         chord = next(ch for ch in progression if ch["bar"]*4 <= note["start"] < (ch["bar"]+ch["bars"])*4)
         note["duration"] = min(note["duration"], (chord["bar"]+chord["bars"])*4-note["start"])
+    if role in ("BASS", "SUB_BASS", "LEAD", "PLUCK", "ARPEGGIO"):
+        # Swing can shorten the gap to the next straight attack. Keep these
+        # lines monophonic even when the following note has a different pitch.
+        ordered = sorted(notes, key=lambda n: n["start"])
+        for note, following in zip(ordered, ordered[1:]):
+            note["duration"] = min(note["duration"], following["start"]-note["start"])
     return notes
 
 

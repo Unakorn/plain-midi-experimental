@@ -1,5 +1,5 @@
 {
-  "description": "Editable generic starting recipes, not artist emulations. Beat positions run from 0 to just below 4 within one bar. Drums repeat with phrase-end fills; the same chord progression drives every pitched part. Raw drum sounds are separate from these rhythms.",
+  "description": "Editable generic starting recipes, not artist emulations. Beat positions run from 0 to just below 4 within one bar. Each seed combines these starting rhythms with genre-aware two-beat cells into repeated two-bar ideas and phrase variations. Variation controls phrase details; new seeds choose fresh rhythms and melodic contours even at zero variation. The same chord progression drives every pitched part. Raw drum sounds are separate from these rhythms.",
   "genres": {
     "trance": {
       "label": "Trance", "bpm": 138, "swing": 0, "progression": "1 6 3 7",
