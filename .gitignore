@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.building-*/
+.pytest_cache/
+generated/
+kits/
+runtime/
+templates/
+ideas/
+Plain MIDI Files/
+*.mid
+*.midi
+*.wav
+*.flp
+*.fst
+*.zip
+Desktop example.json
