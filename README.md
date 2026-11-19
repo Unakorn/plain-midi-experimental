@@ -2,7 +2,7 @@
 
 **EXPERIMENTAL — NEEDS TESTING — UNTESTED IN FL STUDIO**
 
-Generic eight-bar musical building blocks, editable Python scripts, and raw synthesized drum kits. No AI training, model downloads, or external Python packages.
+Eight-bar ideas that develop into reorderable 32-bar songs, editable Python scripts, and raw synthesized drum kits. No AI training, model downloads, or external Python packages.
 
 **Feel free to fork ;)**
 
@@ -10,7 +10,7 @@ This is an early experiment. Automated structural checks have passed; that does 
 
 ## What it makes
 
-- Eight bars of 4/4, with one shared chord progression.
+- Eight bars of 4/4, with one shared chord progression; optionally evolve into four related sections across 32 bars.
 - Nine MIDI parts: drums, pad, pluck, chords, arpeggio, lead, bass, sub-bass, and an optional-use noise trigger.
 - A 32-sound drum kit: four kicks, snares, claps, closed hats, open hats, rides, shakers, and toms.
 - Separate recipes for trance, hard dance, hard trance, house, hard house, hardstyle, pop, and rap.
@@ -29,9 +29,9 @@ python app.py
 
 On Windows you can also double-click **Launch Plain MIDI.cmd**.
 
-Choose a genre, key and tempo, then **Generate to Desktop**. The public release saves a randomly named **`.mid` file** directly on your Desktop, with its WAV kit and individual parts in `Desktop/Plain MIDI Files/<matching name>/`. It does not require a private FL Studio template.
+Choose a genre, key and tempo, then **Generate 8 bars**. The public release saves a randomly named **`.mid` file** directly on your Desktop, with its WAV kit and individual parts in `Desktop/Plain MIDI Files/<matching name>/`. It does not require a private FL Studio template.
 
-Generate chooses a fresh seed by default. **Regenerate** always makes a fresh idea. Enable **Repeat seed** when you want Generate to reproduce the displayed seed.
+Generate chooses a fresh seed by default. **New 8-bar idea** always makes a fresh idea. Enable **Repeat seed** when you want Generate to reproduce the displayed seed.
 
 **Generate chords** is on by default in the GUI. Raise **Chord creativity** to explore more chord changes across the same eight bars, richer extensions, and overlapping shared tones in the pad/chord parts. All pitched parts follow that new timeline. Turn Generate chords off to enter your own **1–32-chord** sequence instead.
 
@@ -45,6 +45,20 @@ python prepare_kits.py
 
 The cache is checked against the synthesis source and sound profile. Changing the code invalidates it. The GUI preview renders only when you click **Play preview**. Windows GUI playback uses `winsound`; the command-line tools also run without the Windows GUI.
 
+## Evolve and rearrange a song
+
+1. **Generate 8 bars** until you have an idea you like.
+2. Set **Evolution**, then click **Evolve to 32 bars**. A keeps your original **Theme** exactly; B adds a **Lift**, C provides **Contrast**, and D makes a **Return** to the theme's harmony.
+3. Click **Shuffle sections**, or choose A/B/C/D once each in the four Order boxes and click **Apply order**. Each action saves a new randomly named project. Section notes and chords move together; shuffling does not reroll them.
+
+Evolution changes chord choices, melodic details, rhythmic activity and phrase endings while working from your saved theme's actual notes. Bass/sub follow the new roots and melodic parts follow each section's harmony. At 0%, all four sections repeat the original exactly. Higher values create more development; they are not a guarantee that every musical dimension changes monotonically. Even a manually entered source progression can be developed in B/C. A always retains the original. Keeping any pitched part freezes the source harmony in every section and repeats that part's exact notes. Keeping drums alone permits new harmony.
+
+The upper genre/key/chord controls apply when generating a new eight-bar idea. **Re-evolve song** uses the saved A theme, the current Evolution amount and current Keep choices to create another B/C/D set. It resets the order to ABCD. **Repeat seed** makes that evolution reproducible from the same source and settings. Shuffle always chooses a different order, independently of Repeat seed.
+
+**Open saved idea** restores `arrangement.json` from a companion folder, including all section notes and the saved order. Generation from a 32-bar song returns to eight bars and uses A as the source for kept parts. The saved JSON also includes a section bank, and `sections/A.mid` through `D.mid` let you arrange the individual eight-bar sections in your DAW. Drag MIDI offers the full current 8- or 32-bar arrangement.
+
+Section swaps preserve each section exactly, including its existing ending/fill. They do not compose a fresh transition for every possible neighbor. The main MIDI has section markers; note tails stay inside their section boundaries. This is a 32-bar song sketch, ready for further arrangement and listening.
+
 ## Command line
 
 ```sh
@@ -52,8 +66,13 @@ python make.py --desktop --genre hard_trance --key F# --seed 17
 python make.py --genre pop --key D --mode major --progression "1 5 6 4" --output ./ideas
 python make.py --genre rap --key A --bpm 92 --no-preview --output ./ideas
 python make.py --genre trance --auto-chords --chord-creativity .85 --seed 17 --no-preview --output ./ideas
+python make.py --genre trance --auto-chords --song --evolution .7 --order ACBD --seed 17 --no-preview --output ./ideas
+python make.py --idea "saved/arrangement.json" --song --evolution .6 --seed 21 --no-preview --output ./ideas
+python make.py --idea "saved-song/arrangement.json" --shuffle --seed 8 --no-preview --output ./ideas
 python make.py --help
 ```
+
+`--idea` preserves exact saved notes/settings; `--config` reads settings and regenerates. A loaded 32-bar song stays intact even with `--song`; use `--order ACBD` or `--shuffle` to rearrange it. These two ordering flags are mutually exclusive. `--evolution` accepts 0–1 and applies when expanding eight bars.
 
 `--output` creates a new uniquely named subfolder. Existing ideas are not overwritten. MIDI carries notes and tempo; it does not install instruments or load drum WAVs into an arbitrary sampler.
 
@@ -69,7 +88,7 @@ python make.py --help
 | 75% | 15–20 |
 | 100% | 24–32 |
 
-The exact count depends on the seed. Raising creativity for the same seed refines its timing and never reduces its chord count. The UI shows the actual count, all chord names, and change markers within each bar.
+The exact count depends on the seed. Raising creativity for the same seed refines its timing and never reduces its chord count. The eight-bar view shows the actual count, all chord names, and change markers within each bar. The 32-bar view shows section labels and boundaries.
 
 **Manual harmony:** turn Generate chords off and enter any 1–32 scale degrees, such as `1 6 3 7`, or explicit chords such as `Am F C G`. The chords divide the eight bars as evenly as the shared MIDI/FLP timing grid permits. Basic triads, suspended chords, sevenths, and several extensions are supported; `CHORDS` in `harmony.py` lists them. The manual field is ignored in generated mode. Chord creativity applies to generated mode; manual harmony is kept exact. CLI calls remain manual by default for compatibility; add `--auto-chords` for automatic harmony.
 
@@ -77,7 +96,7 @@ Scale-degree values run from **1–7**. The chord count is the number of entries
 
 Density controls how busy parts get; swing delays offbeat positions; phrase variation adds alternate rhythmic endings and details. These are separate from chord creativity. New seeds change rhythms and melodies even at zero phrase variation. Keeping any melodic part also keeps the exact generated chord timeline, so newly generated parts still fit. Uncheck kept melodic parts before changing genre, key, scale, chord mode or chord creativity. Keeping drums alone allows new harmony.
 
-The same settings and seed reproduce a generated idea within one engine version. Exact notes are saved in `arrangement.json`; use its saved MIDI to retain any manually edited or previously kept parts. Loading a JSON file through `--config` reads settings and regenerates notes. Seeds from an older engine can produce different notes after an update, so keep saved MIDI for exact recall.
+The same settings and seed reproduce a generated idea within one engine version. Exact notes are saved in `arrangement.json`; use Open saved idea or `--idea` to retain previously kept parts and validated saved notes. Editing a 32-bar JSON requires keeping its section bank and flattened notes consistent. Loading a JSON file through `--config` reads settings and regenerates notes. Seeds from an older engine can produce different notes after an update, so keep saved MIDI for exact recall.
 
 Two-bar rhythm cells and chord-tone contours form A / A-prime / B / A phrases, adapted to the shared harmonic timeline, including changes within a bar. Roles and percussion families have independent seeded choices. The EDM kick/backbeat stays recognizable; bass, lead, pluck, arpeggio and percussion get fresh phrasing.
 
@@ -89,6 +108,7 @@ The new harmony audit covers **4,000 progressions**: 100 seeds per genre at five
 |---|---|
 | `recipes.json` | Genre tempos, progression defaults, beat anchors and candidate rhythms |
 | `generator.py` | Rhythm cells, phrase plans, chords, melodic contours, MIDI writing |
+| `evolution.py` | Develop the saved theme, retain sections, reorder and validate full songs |
 | `harmony.py` | Creative progressions, chord vocabulary and harmonic timing |
 | `drum_synth.py` | Drum synthesis, tuning, decay, brightness |
 | `workflow.py` | Session saving, Desktop names, part locks, kit cache |
@@ -126,6 +146,8 @@ python app.py
 
 Then Desktop export produces an `.flp` instead of `.mid`. It writes the new 32 samples into the verified Drum Buddy state and disables its gates/automatic tuning for raw one-shot playback. Other instrument states, effects, and routing are retained. Samples use absolute paths: keep the companion folder in place. The repository does not supply or install Drum Buddy. Use `--no-flp` with normal CLI output to force MIDI-only generation.
 
+For a 32-bar song, the adapter writes nine full-length native patterns, stretches the 46 playlist placements to 32 bars and stretches the 37 existing calibration automation ramps across that length. Their values and links stay intact; these are not newly composed section automation. Open that song directly in FL Studio. The separate older arranger expects eight-bar sources and does not preserve a 32-bar section arrangement.
+
 This adapter has structural serialization tests in the original development environment. The private fixture is not published, and that integration is **not independently reproducible from this repository alone**. Playback and compatibility remain unverified.
 
 ## Tests and contributions
@@ -134,10 +156,14 @@ This adapter has structural serialization tests in the original development envi
 python -m unittest discover -s tests -v
 ```
 
-Tests cover chord membership, root-following bass, exact eight-bar MIDI length, paired note events, deterministic generation, WAV file validity, output naming, and failure cleanup. They cannot determine whether a groove sounds good. See [CONTRIBUTING.md](CONTRIBUTING.md) for the DAW/listening checks still needed.
+Tests cover chord membership, root-following bass, exact eight- and 32-bar MIDI length, paired note events, deterministic generation, WAV file validity, output naming, and failure cleanup. They cannot determine whether a groove sounds good. See [CONTRIBUTING.md](CONTRIBUTING.md) for the DAW/listening checks still needed.
 
 The drag/variety update passed 26 public test groups on Windows. Native tests exercise real Shell file data, Unicode filenames, format enumeration, and cleanup; the interactive drag loop is substituted in automated tests. A user confirmed Drag MIDI worked in a manual test on the development Windows PC; the specific destination was not recorded. Broader destination and DAW track-import compatibility still needs testing. The diversity audit above is separate from the normal test suite.
 
 The chord-creativity update passes **40 public test groups**. They include all manual chord counts, generated harmony, chromatic-chord metadata, exact timeline retention with kept parts, common-tone crossings, MIDI note pairing, and shared 96/480-PPQ timing. Independent review also checked 400 mixed arrangements after actual native-note conversion. These checks do not establish whether the new progressions sound good with your chosen patches; listening and DAW testing remain necessary.
+
+The song-evolution update passes **57 public tests**, including all 24 section orders, exact saved-theme retention, kept-part rules, saved JSON validation, full-length MIDI/preview output and CLI preservation. Separate native integration checks pass for eight- and 32-bar projects. Independent checks covered 160 evolved/shuffled songs and 186,134 pitched notes. GUI integration exercised real file publication, reopening, ordering and the MIDI drag path; actual DAW playback of the new songs remains untested.
+
+A small 32-song benchmark averaged **0.215 seconds** for evolution plus MIDI serialization on the development machine (maximum 0.299 seconds). This excludes disk writing, kit preparation, FLP export and audio rendering. At 70% Evolution, B/D retained all source attack positions in the five measured melodic/bass roles, while C retained 90% on average. See [measurements and limitations](validation/evolution_metrics.json); reproduce with `python tests/audit_evolution.py`. Retained attacks do not establish subjective musical quality.
 
 MIT licensed. Please report the genre, settings, seed, OS, Python version, DAW/version, and the smallest reproducible problem. Do not upload private projects, presets, account data, or commercial sample packs.

@@ -1,9 +1,11 @@
-"""Export generated eight-bar parts into a copy of a compatible prepared FLP.
+"""Export generated eight- or 32-bar parts into a copy of a compatible prepared FLP.
 
 Nine placed patterns' note payloads and the tempo are replaced. Optional drum
 kit integration sets 32 sample paths and disables Gate/Auto C/genre tuning in
 the measured Drum Buddy state for raw one-shot playback. Routing, controller
-links, automation, mutes and other plugin parameters are preserved.
+links, mutes and other plugin parameters are preserved. For 32-bar songs,
+playlist clips and the existing automation calibration ramps are stretched;
+the adapter does not compose new musical automation.
 This is a measured adapter for the supplied template, not a general FLP API.
 """
 from __future__ import annotations
@@ -19,7 +21,10 @@ import wave
 import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
 
-from arranger_support.flp_binary import FlpError, inspect_project, parse_flp
+from arranger_support.flp_binary import (
+    AutomationPoint, FlpError, automation_points, clone_playlist_record,
+    inspect_project, parse_flp, replace_automation_points,
+)
 
 
 DEFAULT_TEMPLATE = Path(__file__).resolve().parent / "templates" / "automation_template.flp"
@@ -288,8 +293,12 @@ def _integer(value, label, low, high):
     return value
 
 
-def _validate_template(project):
+def _validate_template(project, bars=8):
     """Refuse changed mapping, incomplete clips, or unprepared automation."""
+    if type(bars) is not int or bars not in (8, 32):
+        raise ValueError("Template validation supports only 8 or 32 bars.")
+    total_beats = bars * 4
+    total_ticks = total_beats * project.ppq
     summary = inspect_project(project)
     for event in project.events:
         if event.id == 223:
@@ -325,11 +334,11 @@ def _validate_template(project):
         if _role(pattern["name"]) != role:
             raise FlpError(f"The prepared {role} pattern name changed.")
         clip = next(r for r in musical if r["pattern_id"] == pattern_id)
-        if (clip["position"] != 0 or clip["length"] != 3072
+        if (clip["position"] != 0 or clip["length"] != total_ticks
                 or bytes.fromhex(clip["raw_hex"])[24:32] != b"\xff" * 8):
-            raise FlpError(f"{role} must be placed once, untrimmed, for eight bars from bar 1.")
-        if not 2688 < pattern["length_ticks"] <= 3072:
-            raise FlpError(f"{role} must have native Auto length of eight bars.")
+            raise FlpError(f"{role} must be placed once, untrimmed, for {bars} bars from bar 1.")
+        if not total_ticks - 4 * project.ppq < pattern["length_ticks"] <= total_ticks:
+            raise FlpError(f"{role} must have native Auto length of {bars} bars.")
     actual_controls = {a["channel_id"]: a for a in summary["automation"]}
     if set(actual_controls) != set(range(10, 47)):
         raise FlpError("The template must retain its 37 prepared automation controls.")
@@ -341,13 +350,15 @@ def _validate_template(project):
         points = auto["points"]
         if auto["name"] != expected_name or len(points) != 2:
             raise FlpError("Prepared automation names or reference points changed.")
-        if (points[0]["position_beats"] != 0 or points[1]["position_beats"] <= 0
+        if (points[0]["position_beats"] != 0 or points[1]["position_beats"] != total_beats
                 or points[0]["value"] == points[1]["value"]
                 or any(not math.isfinite(p["value"]) or not 0 <= p["value"] <= 1 for p in points)):
             raise FlpError("Prepared automation needs its two valid calibration points.")
         clip = next(r for r in auto_records if r["channel_id"] == channel_id)
-        if clip["position"] != 0 or clip["length"] <= 0:
-            raise FlpError("Automation clips must start at bar 1.")
+        offsets = struct.unpack_from("<ff", bytes.fromhex(clip["raw_hex"]), 24)
+        if (clip["position"] != 0 or clip["length"] != total_ticks
+                or offsets not in ((-1.0, -1.0), (0.0, float(total_beats)))):
+            raise FlpError(f"Automation clips must cover {bars} bars from bar 1, untrimmed.")
         links = [e for e in project.events if e.id == 227 and len(e.data) == 20
                  and struct.unpack_from("<H", e.data, 2)[0] == channel_id]
         if len(links) != 1:
@@ -355,7 +366,8 @@ def _validate_template(project):
     return summary
 
 
-def _track_notes(track, role, ppq):
+def _track_notes(track, role, ppq, bars=8):
+    total_beats = bars * 4
     notes = track.get("notes")
     if not isinstance(notes, list) or not notes:
         raise ValueError(f"{role} needs nonempty generated note data.")
@@ -365,14 +377,14 @@ def _track_notes(track, role, ppq):
         if not isinstance(note, dict):
             raise ValueError(f"{role} note {number} must be a dictionary.")
         label = f"{role} note {number}"
-        start = _number(note.get("start"), label + " start", 0, 32)
-        duration = _number(note.get("duration"), label + " duration", 0, 32)
+        start = _number(note.get("start"), label + " start", 0, total_beats)
+        duration = _number(note.get("duration"), label + " duration", 0, total_beats)
         pitch = _integer(note.get("pitch"), label + " pitch", 0, 127)
         velocity = _integer(note.get("velocity"), label + " velocity", 1, 127)
-        if duration <= 0 or start + duration > 32 + 1e-8:
-            raise ValueError(f"{label} must end inside the eight-bar phrase.")
+        if duration <= 0 or start + duration > total_beats + 1e-8:
+            raise ValueError(f"{label} must end inside the {bars}-bar arrangement.")
         begin_tick = round(start * ppq)
-        end_tick = min(32 * ppq, round((start + duration) * ppq))
+        end_tick = min(total_beats * ppq, round((start + duration) * ppq))
         if end_tick <= begin_tick:
             raise ValueError(f"{label} is too short at the template's 96-PPQ resolution.")
         if role == "DRUMS":
@@ -391,16 +403,47 @@ def _track_notes(track, role, ppq):
                 coalesced += 1
             by_trigger[key] = (start, duration, pitch, velocity)
         converted = list(by_trigger.values())
-    if max(n[0] + n[1] for n in converted) <= 28 * ppq:
-        raise ValueError(f"{role} must reach into bar 8 to preserve native eight-bar Auto length.")
+    if max(n[0] + n[1] for n in converted) <= (total_beats - 4) * ppq:
+        raise ValueError(f"{role} must reach into bar {bars} to preserve native {bars}-bar Auto length.")
     return sorted(converted), folded, coalesced
+
+
+def _extend_song_timeline(project, summary, bars):
+    """Stretch measured eight-bar placements and calibration timing only.
+
+    Values, curves, native links and opaque record fields stay unchanged.
+    This is intentionally not the older arranger's section automation engine.
+    """
+    if bars == 8:
+        return set()
+    total_beats = bars * 4
+    changed = set()
+    for auto in summary["automation"]:
+        index = auto["event_index"]
+        event = project.events[index]
+        points = automation_points(event)
+        replace_automation_points(event, [
+            AutomationPoint(point.position_beats * bars / 8, point.value,
+                            point.tension, point.flags)
+            for point in points
+        ])
+        changed.add(index)
+    playlist = summary["playlist"][0]
+    project.events[playlist["event_index"]].data = b"".join(
+        clone_playlist_record(bytes.fromhex(record["raw_hex"]), position=0,
+                              length=total_beats * project.ppq,
+                              source_end_beats=(total_beats if record["channel_id"] is not None else None))
+        for record in playlist["records"]
+    )
+    changed.add(playlist["event_index"])
+    return changed
 
 
 def export_template(arrangement, output_path, template_path=None, *,
                     kit_dir=None, kit_reference_dir=None):
-    """Write a NEW eight-bar FLP and return an integration report.
+    """Write a NEW eight- or 32-bar FLP and return an integration report.
 
-    arrangement: {bpm, bars: 8, tracks: [{role, channel, notes: [
+    arrangement: {bpm, bars: 8 or 32, tracks: [{role, channel, notes: [
         {start: beats, duration: beats, pitch: MIDI number, velocity: 1..127}
     ]}]}. Input MIDI channels are intentionally replaced with the existing
     native instrument channel IDs. Input PPQ does not affect beat-based times.
@@ -415,8 +458,9 @@ def export_template(arrangement, output_path, template_path=None, *,
     """
     if not isinstance(arrangement, dict):
         raise ValueError("Arrangement must be a dictionary.")
-    if type(arrangement.get("bars")) is not int or arrangement["bars"] != 8:
-        raise ValueError("This template export requires exactly eight bars.")
+    if type(arrangement.get("bars")) is not int or arrangement["bars"] not in (8, 32):
+        raise ValueError("This template export requires exactly 8 or 32 bars.")
+    bars = arrangement["bars"]
     bpm = _number(arrangement.get("bpm"), "BPM", 10, 522)
     supplied = arrangement.get("tracks")
     if not isinstance(supplied, list):
@@ -464,7 +508,7 @@ def export_template(arrangement, output_path, template_path=None, *,
         changed_indexes.add(drum_index)
     track_report = []
     for role, (pattern_id, channel_id, mixer, _) in ROLE_MAP.items():
-        notes, folded, coalesced = _track_notes(tracks[role], role, project.ppq)
+        notes, folded, coalesced = _track_notes(tracks[role], role, project.ppq, bars)
         index = patterns[pattern_id]["notes_event_index"]
         old_payload = project.events[index].data
         seed = next((old_payload[i:i+24] for i in range(0, len(old_payload), 24)
@@ -495,9 +539,10 @@ def export_template(arrangement, output_path, template_path=None, *,
     changed_indexes.add(tempo_index)
     initialized_indexes, tempo_initializer_updates = _sync_tempo_initializers(project, bpm)
     changed_indexes.update(initialized_indexes)
+    changed_indexes.update(_extend_song_timeline(project, summary, bars))
     output_bytes = project.to_bytes()
     validated = parse_flp(output_bytes)
-    _validate_template(validated)
+    _validate_template(validated, bars=bars)
     _drum_event(validated, inspect_project(validated))
     if len(validated.events) != len(original_events):
         raise RuntimeError("Unexpected FLP event count change.")
@@ -513,12 +558,15 @@ def export_template(arrangement, output_path, template_path=None, *,
     with destination.open("xb") as handle:
         handle.write(output_bytes)
     return {
-        "output": str(destination), "template": str(source), "bars": 8,
+        "output": str(destination), "template": str(source), "bars": bars,
         "bpm": validated.tempo, "ppq": validated.ppq, "tracks": track_report,
         "tempo_initializer_updates": tempo_initializer_updates,
         "source_sha256": hashlib.sha256(original_data).hexdigest(),
         "output_sha256": hashlib.sha256(output_bytes).hexdigest(),
         "preserved_other_events": True, "preserved_automation_controls": 37,
+        "automation_timing": "unchanged" if bars == 8 else "calibration_ramps_stretched_to_32_bars",
+        "composed_section_automation": False,
+        "arranger_source_compatible": bars == 8,
         "preserved_non_drum_plugin_states": True,
         "existing_drum_sounds_preserved": kit_paths is None,
         "drum_kit_referenced": kit_paths is not None,
@@ -527,12 +575,14 @@ def export_template(arrangement, output_path, template_path=None, *,
         "drum_mapping": "Drum Buddy slots 1..32 on MIDI notes 36..67",
         "controller_table": "Verified identifier table, not duplicated parameter values",
         "auditioned_in_fl_studio": False,
-        "recommended_arranger_drum_mode": "original",
+        "recommended_arranger_drum_mode": "original" if bars == 8 else None,
         "warnings": [
             ("The new raw drum kit is referenced by absolute paths. Keep its kit folder at the published location. Drum Buddy Gate, Auto C, and genre/key tuning are disabled for raw one-shot playback."
              if kit_paths is not None else "This FLP retains the template's existing drum samples and playback controls."),
-            "In FLP Arranger choose Keep original drums to retain the generated rhythms; Gentle intentionally removes some hits.",
-            "This is an eight-bar source template. Open it in the existing FLP Arranger to create full-song sections and automation.",
+            ("In FLP Arranger choose Keep original drums to retain the generated rhythms; Gentle intentionally removes some hits."
+             if bars == 8 else "The 37 original two-point automation calibration ramps are stretched across 32 bars with unchanged endpoint values. No section-specific automation was composed."),
+            ("This is an eight-bar source template. Open it in the existing FLP Arranger to create full-song sections and automation."
+             if bars == 8 else "This is a 32-bar song for opening directly in FL Studio. The existing FLP Arranger expects eight-bar sources; use an eight-bar export with that workflow."),
             "Required plugins and original sample files must remain installed. Output has been structurally validated, not auditioned in FL Studio.",
         ],
     }

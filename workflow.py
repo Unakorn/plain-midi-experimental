@@ -11,7 +11,7 @@ import secrets
 import shutil
 import tempfile
 
-from generator import generate, write_bundle, validate_config
+from generator import generate, write_bundle, validate_config, validate_arrangement
 
 APP_DIR = Path(__file__).resolve().parent
 
@@ -179,7 +179,7 @@ def keep_selected_parts(new, previous, roles):
 
 
 def build_session(config, output_root=None, *, previous=None, keep_roles=(),
-                  audio=True, flp=None, status=None, reuse_kits=False, _session_name=None):
+                  audio=True, flp=None, status=None, reuse_kits=False, _session_name=None, prepared_arrangement=None):
     """Publish one new folder only after every requested asset succeeds."""
     status = status or (lambda message: None)
     template = configured_template() if flp is not False else None
@@ -187,7 +187,18 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
     if flp and template is None:
         raise ValueError("FLP export requires PLAIN_MIDI_TEMPLATE. Omit it to generate MIDI and raw WAVs.")
     status("Writing the shared chord progression and instrument parts…")
-    arrangement = _generate_with_kept_harmony(config, previous, keep_roles)
+    if prepared_arrangement is None:
+        arrangement = _generate_with_kept_harmony(config, previous, keep_roles)
+    else:
+        if previous is not None or keep_roles:
+            raise ValueError("Prepared songs already contain their kept parts; do not apply them twice.")
+        arrangement = copy.deepcopy(prepared_arrangement)
+        validate_arrangement(arrangement)
+        if arrangement["bars"] == 32:
+            from evolution import validate_song
+            validate_song(arrangement)
+        keep_roles = tuple(arrangement.get("evolution", {}).get("keep_roles", ()))
+    bars = arrangement["bars"]
     parent = Path(output_root or APP_DIR / "generated").resolve()
     parent.mkdir(parents=True, exist_ok=True)
     name = _session_name or _random_session_name(arrangement["genre"], parent)
@@ -227,10 +238,10 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
             flp_report = export_template(arrangement, staging / "Automation Ready.flp", template_path=template,
                                          kit_dir=staging / "kit", kit_reference_dir=final / "kit")
         readme = [
-            "PLAIN MIDI — EIGHT-BAR STARTER", "",
+            f"PLAIN MIDI — {bars}-BAR ARRANGEMENT", "",
             f"Genre: {GENRE_LABELS.get(arrangement['genre'], arrangement['genre'])}",
             f"Key: {arrangement['key']} {arrangement['mode']} | Tempo: {arrangement['bpm']} BPM",
-            f"Seed: {arrangement['seed']} | Eight bars of 4/4", "",
+            f"Seed: {arrangement['seed']} | {bars} bars of 4/4", "",
             "arrangement.mid: all instrument parts in one Type-1 MIDI file.",
             f"{midi_name}: identical MIDI, named for drag-and-drop from the app.",
             "parts/: separate MIDI files for your instrument channels.",
@@ -247,6 +258,11 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
             "Genre recipes are deliberately simple and editable. Hardstyle kicks are",
             "raw starters; they are not finished distorted hardstyle productions.", "",
         ]
+        if bars == 32:
+            readme += ["SONG SECTIONS: " + " -> ".join(arrangement["section_order"]),
+                       "Four related eight-bar sections. Reordering preserves each section's notes.",
+                       "sections/: individual eight-bar MIDI files for the section bank.",
+                       "Open saved idea in the app and choose arrangement.json to continue editing.", ""]
         if audio:
             readme += ["preview.wav: simple synthesized instrument tones plus this drum kit.",
                        "The held NOISE trigger is omitted; your arranger supplies its swells.", ""]
@@ -259,7 +275,7 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
                        "the FLP stores absolute sample paths. Generate again after moving the app.",
                        "This optional adapter requires the documented prepared-template layout.",
                        "It cannot build a native project from an arbitrary FLP or a blank template.",
-                       "The nine eight-bar parts here are source material, not a finished song.", ""]
+                       "This is an editable musical sketch; audition it before production use.", ""]
         if keep_roles:
             readme += ["Kept parts: " + ", ".join(sorted(keep_roles)),
                        "Their exact notes are saved in arrangement.json.", ""]
@@ -267,7 +283,8 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
             readme += ["Harmony was kept with the retained melodic parts.",
                        "The exact chord timing and notes are in arrangement.json and the saved MIDI.", ""]
         (staging / "START HERE.txt").write_text("\n".join(readme), encoding="utf-8")
-        report = {"schema_version": 1, "genre": arrangement["genre"],
+        report = {"schema_version": 1, "genre": arrangement["genre"], "bars": bars,
+                  "section_order": arrangement.get("section_order"),
                   "seed": arrangement["seed"], "audio": preview_report,
                   "flp": flp_report, "kept_roles": sorted(keep_roles), "reused_kit": cached is not None}
         # Paths in helper reports may point at the staging directory. Normalize
@@ -297,10 +314,10 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
             "project": str(final / ("Automation Ready.flp" if flp else "arrangement.mid"))}
 
 
-def build_desktop_session(config, *, desktop=None, previous=None, keep_roles=(), status=None):
+def build_desktop_session(config, *, desktop=None, previous=None, keep_roles=(), status=None, prepared_arrangement=None):
     """Save a random Desktop MIDI file, or opt-in FLP, plus companion assets."""
     from generator import validate_config
-    settings = validate_config(config)
+    settings = validate_config(prepared_arrangement["config"] if prepared_arrangement is not None else config)
     template = configured_template()
     extension = ".flp" if template is not None else ".mid"
     status = status or (lambda message: None)
@@ -315,6 +332,7 @@ def build_desktop_session(config, *, desktop=None, previous=None, keep_roles=(),
     desktop_created = False
     try:
         result = build_session(settings, companions, previous=previous, keep_roles=keep_roles,
+                               prepared_arrangement=prepared_arrangement,
                                audio=False, flp=template is not None, reuse_kits=True,
                                _session_name=name, status=status)
         source = Path(result["project"])
@@ -338,5 +356,5 @@ def build_desktop_session(config, *, desktop=None, previous=None, keep_roles=(),
     result["companion_project"] = result["project"]
     result["project"] = str(destination)
     result["flp"] = str(destination) if extension == ".flp" else None
-    status("Saved — your eight-bar file is on Desktop.")
+    status(f"Saved — your {result['arrangement']['bars']}-bar file is on Desktop.")
     return result

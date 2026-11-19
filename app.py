@@ -8,10 +8,11 @@ import queue
 import random
 import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import filedialog, messagebox, ttk
 
 from workflow import APP_DIR, GENRE_LABELS, ROLE_LABELS, build_desktop_session, desktop_directory
-from generator import GENRES
+from generator import GENRES, midi_bytes, validate_arrangement
+from evolution import evolve_song, reorder_song, shuffle_song, validate_song
 from file_drag import drag_file
 
 COLORS = {"bg": "#13171c", "panel": "#1d242c", "text": "#eef2f6",
@@ -26,15 +27,18 @@ def create_root():
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("Plain MIDI — eight bars, your way")
-        self.root.geometry("1100x900")
-        self.root.minsize(1000, 840)
+        self.root.title("Plain MIDI — from idea to song")
+        self.root.geometry("1140x960")
+        self.root.minsize(1080, 900)
         self.root.configure(bg=COLORS["bg"])
         self.events = queue.Queue()
         self.busy = False
         self.result = None
         self.drag_origin = None
         self.repeat_seed = tk.BooleanVar(value=False)
+        self.evolution_amount = tk.DoubleVar(value=.5)
+        self.order_vars = [tk.StringVar(value=letter) for letter in "ABCD"]
+        self.header_text = tk.StringVar(value="8 BARS  /  9 PARTS  /  32 DRUMS")
         self.var = {
             "genre": tk.StringVar(value="House"), "key": tk.StringVar(value="A"),
             "mode": tk.StringVar(value="minor"), "bpm": tk.StringVar(value=str(GENRES["house"]["bpm"])),
@@ -70,7 +74,7 @@ class App:
         header = ttk.Frame(outer)
         header.pack(fill="x")
         ttk.Label(header, text="Plain MIDI", style="Title.TLabel").pack(side="left")
-        ttk.Label(header, text="8 BARS  /  9 PARTS  /  32 DRUMS", foreground=COLORS["accent"]).pack(side="right", pady=12)
+        ttk.Label(header, textvariable=self.header_text, foreground=COLORS["accent"]).pack(side="right", pady=12)
         ttk.Label(outer, text="Simple musical building blocks. Every note is yours to change.", style="Small.TLabel").pack(anchor="w", pady=(0, 18))
         settings = ttk.Frame(outer)
         settings.pack(fill="x")
@@ -127,16 +131,40 @@ class App:
         self.canvas.bind("<Configure>", lambda event: self.draw())
         keep_row = ttk.Frame(outer)
         keep_row.pack(fill="x", pady=(12, 8))
-        ttk.Label(keep_row, text="Keep on next variation:", style="Small.TLabel").pack(side="left", padx=(0, 8))
+        ttk.Label(keep_row, text="Keep parts:", style="Small.TLabel").pack(side="left", padx=(0, 8))
         for role, label in ROLE_LABELS.items():
             if role == "NOISE":
                 continue
             ttk.Checkbutton(keep_row, text=label, variable=self.keep[role]).pack(side="left", padx=3)
+        song_row = ttk.Frame(outer)
+        song_row.pack(fill="x", pady=(6, 4))
+        self.evolve_button = ttk.Button(song_row, text="Evolve to 32 bars", command=self.evolve, state="disabled")
+        self.evolve_button.pack(side="left")
+        evolution_panel = ttk.Frame(song_row)
+        evolution_panel.pack(side="left", padx=12)
+        evolution_label = tk.StringVar()
+        def update_evolution(*args):
+            evolution_label.set(f"Evolution   {self.evolution_amount.get():.0%}")
+        self.evolution_amount.trace_add("write", update_evolution)
+        update_evolution()
+        ttk.Label(evolution_panel, textvariable=evolution_label, style="Small.TLabel").pack(anchor="w")
+        ttk.Scale(evolution_panel, from_=0, to=1, variable=self.evolution_amount, length=155).pack()
+        self.shuffle_button = ttk.Button(song_row, text="Shuffle sections", command=self.shuffle, state="disabled")
+        self.shuffle_button.pack(side="left", padx=(0, 12))
+        ttk.Label(song_row, text="Order", style="Small.TLabel").pack(side="left", padx=(0, 5))
+        self.order_boxes = []
+        for value in self.order_vars:
+            box = ttk.Combobox(song_row, textvariable=value, values=list("ABCD"), width=2, state="disabled")
+            box.pack(side="left", padx=2)
+            self.order_boxes.append(box)
+        self.order_button = ttk.Button(song_row, text="Apply order", command=self.apply_order, state="disabled")
+        self.order_button.pack(side="left", padx=(8, 0))
+        ttk.Label(outer, text="Evolve uses your saved theme. Higher Evolution changes harmony and phrases more; kept melodic parts keep the harmony.", style="Small.TLabel").pack(anchor="w", pady=(0, 4))
         actions = ttk.Frame(outer)
         actions.pack(fill="x", pady=(6, 10))
-        self.generate_button = ttk.Button(actions, text="Generate to Desktop", command=self.generate, style="Accent.TButton")
+        self.generate_button = ttk.Button(actions, text="Generate 8 bars", command=self.generate, style="Accent.TButton")
         self.generate_button.pack(side="left")
-        self.variation_button = ttk.Button(actions, text="Regenerate", command=lambda: self.generate(new_seed=True))
+        self.variation_button = ttk.Button(actions, text="New 8-bar idea", command=lambda: self.generate(new_seed=True))
         self.variation_button.pack(side="left", padx=8)
         self.play_button = ttk.Button(actions, text="Play preview", command=self.play, state="disabled")
         self.play_button.pack(side="left")
@@ -147,6 +175,8 @@ class App:
         self.folder_button.pack(side="right")
         export_row = ttk.Frame(outer)
         export_row.pack(fill="x", pady=(0, 8))
+        self.load_button = ttk.Button(export_row, text="Open saved idea", command=self.open_saved)
+        self.load_button.pack(side="right")
         self.drag_button = ttk.Button(export_row, text="Drag MIDI", state="disabled", cursor="hand2")
         self.drag_button.pack(side="left")
         self.drag_button.bind("<ButtonPress-1>", self.drag_press)
@@ -160,6 +190,7 @@ class App:
         ttk.Button(footer, text="Desktop", command=lambda: os.startfile(str(desktop_directory()))).pack(side="right")
         self.root.after(100, self.poll)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
+        self.refresh_actions()
         self.draw()
 
     def change_genre(self, event=None):
@@ -193,19 +224,56 @@ class App:
         config["seed"] = int(config["seed"])
         return config
 
+    def source_theme(self):
+        if not self.result:
+            return None
+        arrangement = self.result["arrangement"]
+        return arrangement["section_bank"]["A"]["arrangement"] if arrangement["bars"] == 32 else arrangement
+
+    def next_seed(self, force=False):
+        if force or not self.repeat_seed.get():
+            old = self.var["seed"].get()
+            seed = str(random.SystemRandom().randrange(1, 2**31))
+            while seed == old:
+                seed = str(random.SystemRandom().randrange(1, 2**31))
+            self.var["seed"].set(seed)
+        return int(self.var["seed"].get())
+
+    def refresh_actions(self):
+        ready = self.result is not None and not self.busy
+        song = ready and self.result["arrangement"]["bars"] == 32
+        for button in (self.generate_button, self.variation_button, self.load_button):
+            button.configure(state="disabled" if self.busy else "normal")
+        for button in (self.folder_button, self.evolve_button):
+            button.configure(state="normal" if ready else "disabled")
+        can_preview = ready and self.result.get("media_matches", True) and (self.result.get("preview") or (Path(self.result["folder"]) / "kit" / "kit.json").is_file())
+        self.play_button.configure(state="normal" if can_preview else "disabled")
+        self.project_button.configure(state="normal" if ready and self.result.get("project") else "disabled")
+        self.drag_button.configure(state="normal" if ready and self.result.get("midi") else "disabled")
+        for button in (self.shuffle_button, self.order_button):
+            button.configure(state="normal" if song else "disabled")
+        for box in self.order_boxes:
+            box.configure(state="readonly" if song else "disabled")
+        self.evolve_button.configure(text="Re-evolve song" if song else "Evolve to 32 bars")
+
+    def run_job(self, job):
+        self.stop()
+        self.busy = True
+        self.refresh_actions()
+        self.status.set("Building your idea…")
+        def worker():
+            try:
+                self.events.put(("done", job()))
+            except Exception as error:
+                self.events.put(("error", f"{type(error).__name__}: {error}"))
+        threading.Thread(target=worker, daemon=True).start()
+
     def generate(self, new_seed=None):
         if self.busy:
             return
-        self.stop()
-        if new_seed is None:
-            new_seed = not self.repeat_seed.get()
-        if new_seed:
-            prior_seed = self.var["seed"].get()
-            seed = str(random.SystemRandom().randrange(1, 2**31))
-            while seed == prior_seed:
-                seed = str(random.SystemRandom().randrange(1, 2**31))
-            self.var["seed"].set(seed)
         try:
+            if new_seed is not False:
+                self.next_seed(force=new_seed is True)
             config = self.configuration()
             keep = [role for role, flag in self.keep.items() if flag.get()]
             if keep and self.result is None:
@@ -213,18 +281,114 @@ class App:
         except ValueError as error:
             messagebox.showerror("Check the settings", str(error), parent=self.root)
             return
-        self.busy = True
-        for button in (self.generate_button, self.variation_button, self.play_button, self.drag_button):
-            button.configure(state="disabled")
-        prior = self.result["arrangement"] if self.result else None
-        def worker():
-            try:
-                result = build_desktop_session(config, previous=prior, keep_roles=keep,
-                                              status=lambda text: self.events.put(("status", text)))
-                self.events.put(("done", result))
-            except Exception as error:
-                self.events.put(("error", f"{type(error).__name__}: {error}"))
-        threading.Thread(target=worker, daemon=True).start()
+        prior = self.source_theme()
+        self.run_job(lambda: build_desktop_session(config, previous=prior, keep_roles=keep,
+                        status=lambda text: self.events.put(("status", text))))
+
+    def publish_song(self, factory):
+        def job():
+            song = factory()
+            return build_desktop_session(song["config"], prepared_arrangement=song,
+                            status=lambda text: self.events.put(("status", text)))
+        self.run_job(job)
+
+    def evolve(self):
+        if self.busy or not self.result:
+            return
+        try:
+            seed = self.next_seed()
+            amount = self.evolution_amount.get()
+            source = self.source_theme()
+            keep = [role for role, flag in self.keep.items() if flag.get()]
+        except ValueError as error:
+            messagebox.showerror("Check the seed", str(error), parent=self.root)
+            return
+        self.publish_song(lambda: evolve_song(source, seed=seed, amount=amount, keep_roles=keep))
+
+    def shuffle(self):
+        if self.busy or not self.result or self.result["arrangement"]["bars"] != 32:
+            return
+        # A shuffle always changes the order, including with Repeat seed enabled.
+        seed = random.SystemRandom().randrange(1, 2**31)
+        song = self.result["arrangement"]
+        self.publish_song(lambda: shuffle_song(song, seed=seed))
+
+    def apply_order(self):
+        if self.busy or not self.result or self.result["arrangement"]["bars"] != 32:
+            return
+        order = [value.get() for value in self.order_vars]
+        if sorted(order) != list("ABCD"):
+            messagebox.showerror("Section order", "Use A, B, C and D once each.", parent=self.root)
+            return
+        song = self.result["arrangement"]
+        if order == song["section_order"]:
+            self.status.set("That order is already saved. Choose another order or Shuffle sections.")
+            return
+        self.publish_song(lambda: reorder_song(song, order))
+
+    def open_saved(self, filename=None):
+        if self.busy:
+            return
+        filename = filename or filedialog.askopenfilename(parent=self.root, title="Open a saved Plain MIDI idea",
+                        initialdir=desktop_directory() / "Plain MIDI Files",
+                        filetypes=[("Plain MIDI arrangement", "*.json")])
+        if not filename:
+            return
+        try:
+            path = Path(filename).resolve()
+            arrangement = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(arrangement, dict):
+                raise ValueError("Choose an arrangement.json saved by Plain MIDI.")
+            validate_arrangement(arrangement)
+            if arrangement["bars"] == 32:
+                validate_song(arrangement)
+            from generator import validate_config
+            config = validate_config(arrangement["config"])
+            folder = path.parent
+            midi = next((p for p in (folder / (folder.name + ".mid"), folder / "arrangement.mid") if p.is_file()), None)
+            media_matches = midi is not None and midi.read_bytes() == midi_bytes(arrangement)
+            flp = folder / "Automation Ready.flp"
+            project = flp if flp.is_file() else midi
+            result = {"arrangement": arrangement, "folder": str(folder), "midi": str(midi) if midi else None,
+                      "flp": str(flp) if flp.is_file() else None,
+                      "project": str(project) if project else None,
+                      "preview": str(folder / "preview.wav") if (folder / "preview.wav").is_file() else None,
+                      "media_matches": media_matches}
+            if not media_matches:
+                result.update(midi=None, flp=None, project=None, preview=None)
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+            messagebox.showerror("Could not open idea", str(error), parent=self.root)
+            return
+        self.stop()
+        for flag in self.keep.values():
+            flag.set(False)
+        for key, variable in self.var.items():
+            value = config[key]
+            variable.set(GENRE_LABELS[value] if key == "genre" else value)
+        self.last_genre = config["genre"]
+        self.var["seed"].set(str(arrangement["seed"]))
+        self.evolution_amount.set(arrangement.get("evolution", {}).get("amount", .5))
+        self.show_result(result)
+        self.status.set(f"Opened {arrangement['bars']}-bar idea: {folder.name}")
+        if not media_matches:
+            self.status.set("Loaded JSON notes. Matching exported MIDI was not found; evolve or rearrange to save matching files.")
+
+    def show_result(self, result):
+        result.setdefault("project", result.get("flp") or result.get("midi"))
+        self.result = result
+        arrangement = result["arrangement"]
+        bars = arrangement["bars"]
+        self.header_text.set(f"{bars} BARS  /  9 PARTS  /  32 DRUMS")
+        if bars == 32:
+            self.chords.set(f"{len(arrangement['progression'])} chord changes / 32 bars   ·   " +
+                    "  →  ".join(f"{letter} {arrangement['section_bank'][letter]['label']}" for letter in arrangement["section_order"]))
+            for variable, letter in zip(self.order_vars, arrangement["section_order"]):
+                variable.set(letter)
+        else:
+            self.chords.set(f"{len(arrangement['progression'])} chords / 8 bars   ·   " +
+                    "  →  ".join(p["symbol"] for p in arrangement["progression"]))
+        self.refresh_actions()
+        self.draw()
 
     def poll(self):
         try:
@@ -234,48 +398,50 @@ class App:
                     self.status.set(payload)
                     continue
                 self.busy = False
-                self.generate_button.configure(state="normal")
-                self.variation_button.configure(state="normal")
                 if kind == "error":
                     self.status.set("Could not finish this action. " + payload)
-                    messagebox.showerror("Could not generate", payload, parent=self.root)
+                    messagebox.showerror("Could not finish", payload, parent=self.root)
                 elif kind == "preview_done":
                     self.result["preview"] = payload
                     self.status.set("Playing the simple synth preview. Your FL Studio instruments will sound different.")
                     self.play()
                 else:
-                    self.result = payload
-                    arrangement = payload["arrangement"]
-                    self.chords.set(f"{len(arrangement['progression'])} chords / 8 bars   ·   " + "  →  ".join(p["symbol"] for p in arrangement["progression"]))
-                    notes = sum(len(t["notes"]) for t in arrangement["tracks"])
+                    self.show_result(payload)
                     self.status.set(f"Saved to Desktop: {Path(payload['project']).name}")
-                    self.folder_button.configure(state="normal")
-                    self.project_button.configure(state="normal")
-                    self.draw()
-                if self.result:
-                    self.play_button.configure(state="normal")
-                    self.drag_button.configure(state="normal")
+                self.refresh_actions()
         except queue.Empty:
             pass
         self.root.after(100, self.poll)
 
     def draw(self):
         self.canvas.delete("all")
-        width, height = max(self.canvas.winfo_width(), 850), max(self.canvas.winfo_height(), 240)
-        left, top = 105, 25
+        width, height = max(self.canvas.winfo_width(), 850), max(self.canvas.winfo_height(), 190)
+        arrangement = self.result["arrangement"] if self.result else None
+        bars = arrangement["bars"] if arrangement else 8
+        beats = bars * 4
+        left, top = 105, 47 if bars == 32 else 25
         row_height = (height - top - 10) / 9
         usable = width - left - 16
-        tracks = {t["role"]: t for t in self.result["arrangement"]["tracks"]} if self.result else {}
-        for bar in range(9):
-            x = left + usable * bar / 8
-            self.canvas.create_line(x, top - 3, x, height - 8, fill=COLORS["line"])
-            if bar < 8:
-                self.canvas.create_text(x + 5, 12, anchor="w", text=f"{bar+1}", fill=COLORS["muted"], font=("Segoe UI", 9))
-        if self.result:
-            for chord in self.result["arrangement"]["progression"]:
+        tracks = {t["role"]: t for t in arrangement["tracks"]} if arrangement else {}
+        for bar in range(bars + 1):
+            x = left + usable * bar / bars
+            self.canvas.create_line(x, top - 3, x, height - 8,
+                    fill="#698779" if bars == 32 and bar % 8 == 0 else COLORS["line"])
+            if bar < bars and (bars == 8 or bar % 4 == 0):
+                self.canvas.create_text(x + 5, top - 13, anchor="w", text=f"{bar+1}", fill=COLORS["muted"], font=("Segoe UI", 9))
+        if bars == 32:
+            for index, letter in enumerate(arrangement["section_order"]):
+                x = left + usable * index / 4
+                color = PALETTE[list("ABCD").index(letter)]
+                self.canvas.create_rectangle(x, 1, x + usable/4 - 2, 20, fill="#26353b", outline="")
+                self.canvas.create_text(x+6, 10, anchor="w",
+                        text=f"{letter}  {arrangement['section_bank'][letter]['label']}  ·  {index*8+1}–{index*8+8}",
+                        fill=color, font=("Segoe UI", 9, "bold"))
+        elif arrangement:
+            for chord in arrangement["progression"]:
                 beat = chord["bar"] * 4
                 if beat % 4:
-                    x = left + usable * beat / 32
+                    x = left + usable * beat / beats
                     self.canvas.create_line(x, top, x, height - 8, fill="#354a46", dash=(2, 4))
         for index, (role, label) in enumerate(ROLE_LABELS.items()):
             y = top + index * row_height
@@ -285,16 +451,16 @@ class App:
             pitches = [n["pitch"] for n in notes] or [60]
             low, high = min(pitches), max(pitches)
             for note in notes:
-                x1 = left + usable * note["start"] / 32
-                x2 = left + usable * (note["start"] + note["duration"]) / 32
+                x1 = left + usable * note["start"] / beats
+                x2 = left + usable * (note["start"] + note["duration"]) / beats
                 fraction = (note["pitch"]-low) / max(1, high-low)
                 note_y = y + 4 + (1-fraction) * max(1, row_height-11)
-                self.canvas.create_rectangle(x1, note_y, max(x1+2, x2), note_y+3, fill=color, outline="")
+                self.canvas.create_rectangle(x1, note_y, min(left+usable, max(x1+2, x2)), note_y+3, fill=color, outline="")
         if not self.result:
-            self.canvas.create_text(left + usable/2, height/2, text="Your eight-bar arrangement will appear here", fill=COLORS["muted"], font=("Segoe UI", 13))
+            self.canvas.create_text(left + usable/2, height/2, text="Generate eight bars, then evolve your idea into a song", fill=COLORS["muted"], font=("Segoe UI", 13))
 
     def play(self):
-        if self.busy or not self.result:
+        if self.busy or not self.result or not self.result.get("media_matches", True):
             return
         if self.result.get("preview"):
             try:
@@ -309,8 +475,7 @@ class App:
             self.play()
             return
         self.busy = True
-        for button in (self.generate_button, self.variation_button, self.play_button, self.drag_button):
-            button.configure(state="disabled")
+        self.refresh_actions()
         self.status.set("Rendering the simple sound preview. The MIDI / project is already saved on your Desktop.")
         arrangement = self.result["arrangement"]
         def render():
@@ -348,8 +513,7 @@ class App:
             return "break"
         self.drag_origin = None
         self.busy = True
-        for button in (self.generate_button, self.variation_button, self.play_button, self.drag_button):
-            button.configure(state="disabled")
+        self.refresh_actions()
         try:
             path = Path(self.result["midi"])
             self.status.set("Drop the MIDI into your DAW or folder. Press Escape to cancel.")
@@ -365,8 +529,7 @@ class App:
         finally:
             self.busy = False
             self.drag_release()
-            for button in (self.generate_button, self.variation_button, self.play_button, self.drag_button):
-                button.configure(state="normal")
+            self.refresh_actions()
         return "break"
 
     def open_folder(self):

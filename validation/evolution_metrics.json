@@ -1,0 +1,87 @@
+{
+  "songs": 32,
+  "source_seeds_per_genre": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "evolution_seeds_per_genre": [
+    1000,
+    1001,
+    1002,
+    1003
+  ],
+  "amount": 0.7,
+  "source_chord_creativity": 0.75,
+  "generation_and_midi_seconds": {
+    "mean": 0.2145,
+    "max": 0.2991
+  },
+  "notes": 56729,
+  "source_attack_retention": {
+    "B": {
+      "minimum": 1.0,
+      "mean": 1.0
+    },
+    "C": {
+      "minimum": 0.76,
+      "mean": 0.9014
+    },
+    "D": {
+      "minimum": 1.0,
+      "mean": 1.0
+    }
+  },
+  "examples": [
+    {
+      "genre": "trance",
+      "source_chords": 20,
+      "song_chords": 81,
+      "notes": 1988
+    },
+    {
+      "genre": "hard_dance",
+      "source_chords": 19,
+      "song_chords": 76,
+      "notes": 1787
+    },
+    {
+      "genre": "hard_trance",
+      "source_chords": 18,
+      "song_chords": 76,
+      "notes": 1986
+    },
+    {
+      "genre": "house",
+      "source_chords": 15,
+      "song_chords": 66,
+      "notes": 1675
+    },
+    {
+      "genre": "hard_house",
+      "source_chords": 18,
+      "song_chords": 74,
+      "notes": 1854
+    },
+    {
+      "genre": "hardstyle",
+      "source_chords": 17,
+      "song_chords": 74,
+      "notes": 1671
+    },
+    {
+      "genre": "pop",
+      "source_chords": 20,
+      "song_chords": 83,
+      "notes": 1660
+    },
+    {
+      "genre": "rap",
+      "source_chords": 19,
+      "song_chords": 75,
+      "notes": 1468
+    }
+  ],
+  "limits": "Timing covers evolution and MIDI serialization, excluding disk, preview and FLP. Attack retention is measured on FL Studio's 96 PPQ grid, over five melodic/bass roles. This finite audit does not measure perceived musical quality or a universal duplicate probability."
+}

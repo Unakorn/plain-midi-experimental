@@ -240,7 +240,7 @@ def _read_wave(path):
 
 
 def render_preview(arrangement, kit_dir_or_manifest, output_path):
-    """Render an eight-bar sketch using this kit and intentionally plain tones.
+    """Render an eight- or 32-bar sketch using this kit and plain tones.
 
     Pitch/timing are representative; this does not render FL Studio plugins,
     their effects or automation. The automation-only NOISE trigger is omitted.
@@ -250,10 +250,11 @@ def render_preview(arrangement, kit_dir_or_manifest, output_path):
     if target.exists():
         raise FileExistsError(f"Output already exists: {target}")
     bpm = _finite(arrangement.get("bpm"),"BPM",30,300)
-    if arrangement.get("bars") != 8:
-        raise ValueError("Preview requires an eight-bar arrangement.")
+    if type(arrangement.get("bars")) is not int or arrangement["bars"] not in (8, 32):
+        raise ValueError("Preview requires an eight- or 32-bar arrangement.")
+    beats = arrangement["bars"] * 4
     seconds_per_beat = 60/bpm
-    duration = 32*seconds_per_beat
+    duration = beats*seconds_per_beat
     count = round(duration*SAMPLE_RATE)
     mix = array("f", [0.0])*count
     manifest_path = Path(kit_dir_or_manifest)
@@ -279,10 +280,10 @@ def render_preview(arrangement, kit_dir_or_manifest, output_path):
         notes = track["notes"]
         hats = sorted(n["start"] for n in notes if role == "DRUMS" and 48 <= n["pitch"] <= 55)
         for note in notes:
-            start = _finite(note["start"],"Note start",0,32)
-            length = _finite(note["duration"],"Note duration",.0001,32)
-            if start+length > 32.00001:
-                raise ValueError("A note extends past the eight-bar boundary.")
+            start = _finite(note["start"],"Note start",0,beats)
+            length = _finite(note["duration"],"Note duration",.0001,beats)
+            if start+length > beats+.00001:
+                raise ValueError("A note extends past the arrangement boundary.")
             pitch = note["pitch"]
             if isinstance(pitch,bool) or not isinstance(pitch,int) or pitch not in range(128):
                 raise ValueError("MIDI pitch must be an integer from 0 to 127.")

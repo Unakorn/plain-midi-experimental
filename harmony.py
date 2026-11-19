@@ -242,10 +242,13 @@ def _automatic(config):
             for i, chord in enumerate(chords)]
 
 
-def validate_progression(progression):
-    """Check a shared eight-bar timeline, including a retained prior harmony."""
-    if not isinstance(progression, list) or not 1 <= len(progression) <= 32:
-        raise ValueError("A chord timeline must contain between 1 and 32 chords.")
+def validate_progression(progression, *, bars=8):
+    """Check an eight-bar idea or an assembled 32-bar harmonic timeline."""
+    if type(bars) is not int or bars not in (8, 32):
+        raise ValueError("A chord timeline must be eight or 32 bars.")
+    beats = bars * 4
+    if not isinstance(progression, list) or not 1 <= len(progression) <= bars * 4:
+        raise ValueError(f"A {bars}-bar chord timeline needs between 1 and {bars*4} chords.")
     previous_end = 0
     for chord in progression:
         if not isinstance(chord, dict):
@@ -260,8 +263,8 @@ def validate_progression(progression):
                 raise ValueError("Chord timing must align to the shared MIDI/FLP grid.")
             ticks.append(round(raw))
         start, duration = ticks
-        if start != previous_end or duration <= 0 or start+duration > BEATS*HARMONY_PPQ:
-            raise ValueError("Chords must form one contiguous, positive eight-bar timeline.")
+        if start != previous_end or duration <= 0 or start+duration > beats*HARMONY_PPQ:
+            raise ValueError("Chords must form one contiguous, positive timeline.")
         for field, expected in (("start", start/HARMONY_PPQ), ("duration", duration/HARMONY_PPQ)):
             if field in chord:
                 value = chord[field]
@@ -278,8 +281,8 @@ def validate_progression(progression):
         if not isinstance(symbol, str) or not symbol.strip() or len(symbol) > 40 or any(ord(c) < 32 for c in symbol):
             raise ValueError("Each chord needs a short printable symbol.")
         previous_end = start+duration
-    if previous_end != BEATS*HARMONY_PPQ:
-        raise ValueError("Chord timeline must end exactly at eight bars.")
+    if previous_end != beats*HARMONY_PPQ:
+        raise ValueError(f"Chord timeline must end exactly at {bars} bars.")
 
 
 def build_progression(config):

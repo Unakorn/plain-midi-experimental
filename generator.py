@@ -588,28 +588,53 @@ def generate(config=None, *, progression_override=None):
 
 
 def validate_arrangement(a):
-    if a.get("bars") != 8 or a.get("beats_per_bar") != 4 or a.get("ppq") != PPQ:
-        raise ValueError("This version requires eight bars of 4/4 at 480 PPQ.")
+    if (not isinstance(a, dict) or type(a.get("bars")) is not int or a["bars"] not in (8, 32)
+            or a.get("beats_per_bar") != 4 or a.get("ppq") != PPQ):
+        raise ValueError("This version supports eight or 32 bars of 4/4 at 480 PPQ.")
+    beats = a["bars"] * 4
     _number(a.get("bpm"),"BPM",30,300)
-    validate_progression(a.get("progression"))
-    roles = [t["role"] for t in a["tracks"]]
+    validate_progression(a.get("progression"), bars=a["bars"])
+    tracks = a.get("tracks")
+    if not isinstance(tracks, list) or any(not isinstance(t, dict) for t in tracks):
+        raise ValueError("Arrangement tracks must be a list of instrument parts.")
+    roles = [t.get("role") for t in tracks]
+    if any(type(role) is not str for role in roles):
+        raise ValueError("Every instrument part needs a role name.")
     if sorted(roles) != sorted(ROLES):
         raise ValueError("Arrangement must contain each of the nine roles once.")
     for track in a["tracks"]:
-        if not isinstance(track["channel"],int) or not 0 <= track["channel"] < 16:
+        if type(track.get("channel")) is not int or not 0 <= track["channel"] < 16:
             raise ValueError("MIDI channel out of range.")
-        if not track["notes"]:
+        if not isinstance(track.get("notes"), list) or not track["notes"]:
             raise ValueError(f"{track['role']} has no notes.")
         for n in track["notes"]:
-            _number(n["start"],"Note start",0,BEATS-1/PPQ)
-            _number(n["duration"],"Note duration",1/PPQ,BEATS)
-            if n["start"]+n["duration"] > BEATS+1e-8:
-                raise ValueError("A note extends past bar eight.")
+            if not isinstance(n, dict) or not all(k in n for k in ("start", "duration", "pitch", "velocity")):
+                raise ValueError("Every MIDI note needs start, duration, pitch and velocity.")
+            _number(n["start"],"Note start",0,beats-1/PPQ)
+            _number(n["duration"],"Note duration",1/PPQ,beats)
+            if n["start"]+n["duration"] > beats+1e-8:
+                raise ValueError(f"A note extends past bar {a['bars']}.")
             for field,lo,hi in (("pitch",0,127),("velocity",1,127)):
                 if isinstance(n[field],bool) or not isinstance(n[field],int) or not lo <= n[field] <= hi:
                     raise ValueError(f"Invalid MIDI {field}.")
-        if max(n["start"]+n["duration"] for n in track["notes"]) <= 28:
-            raise ValueError(f"{track['role']} needs musical content in bar eight for FLP auto-length.")
+        if max(n["start"]+n["duration"] for n in track["notes"]) <= beats-4:
+            raise ValueError(f"{track['role']} needs musical content in the final bar for FLP auto-length.")
+    if "sections" in a:
+        sections = a["sections"]
+        if (a["bars"] != 32 or not isinstance(sections, list) or len(sections) != 4
+                or any(not isinstance(s, dict) or type(s.get("id")) is not str for s in sections)
+                or [s.get("bar") for s in sections] != [0, 8, 16, 24]
+                or any(s.get("bars") != 8 for s in sections)
+                or sorted(s.get("id", "") for s in sections) != list("ABCD")):
+            raise ValueError("A song needs four distinct eight-bar sections, A through D.")
+    if "section_bank" in a:
+        if a["bars"] != 32 or not isinstance(a["section_bank"], dict) or set(a["section_bank"]) != set("ABCD"):
+            raise ValueError("A song section bank must contain A, B, C and D.")
+        for section in a["section_bank"].values():
+            if (not isinstance(section, dict) or not isinstance(section.get("arrangement"), dict)
+                    or section["arrangement"].get("bars") != 8):
+                raise ValueError("Each bank section must remain eight bars.")
+            validate_arrangement(section["arrangement"])
 
 
 def _vlq(value):
@@ -626,26 +651,30 @@ def _meta(kind,data):
     return b"\xff"+bytes([kind])+_vlq(len(data))+data
 
 
-def _chunk(events):
+def _chunk(events, end_tick=BEATS*PPQ):
     body = bytearray()
     tick = 0
     for at,order,data in sorted(events,key=lambda event:(event[0],event[1])):
         body += _vlq(at-tick)+data
         tick = at
-    body += _vlq(BEATS*PPQ-tick)+_meta(0x2f,b"")
+    body += _vlq(end_tick-tick)+_meta(0x2f,b"")
     return b"MTrk"+struct.pack(">I",len(body))+body
 
 
 def midi_bytes(arrangement, tracks=None, gm_drums=False):
-    """Standard MIDI type 1, no program changes, exact eight-bar end markers."""
+    """Standard MIDI type 1, no program changes, exact arrangement end markers."""
     validate_arrangement(arrangement)
     tracks = arrangement["tracks"] if tracks is None else tracks
-    conductor = [(0,0,_meta(3,b"Plain MIDI - 8 bars")),
+    end_tick = arrangement["bars"] * 4 * PPQ
+    conductor = [(0,0,_meta(3,f"Plain MIDI - {arrangement['bars']} bars".encode("ascii"))),
                  (0,1,_meta(0x51,round(60000000/arrangement["bpm"]).to_bytes(3,"big"))),
                  (0,2,_meta(0x58,bytes([4,2,24,8])))]
     for chord in arrangement["progression"]:
         conductor.append((round(chord["bar"]*4*PPQ),3,_meta(6,chord["symbol"].encode("utf-8"))))
-    chunks = [_chunk(conductor)]
+    for section in arrangement.get("sections", []):
+        label = f"Section {section['id']}: {section.get('label', section['id'])}"
+        conductor.append((round(section["bar"]*4*PPQ),2,_meta(6,label.encode("utf-8"))))
+    chunks = [_chunk(conductor, end_tick)]
     for track in tracks:
         events = [(0,0,_meta(3,track["role"].encode("ascii")))]
         if not track.get("muted",False):
@@ -660,7 +689,7 @@ def midi_bytes(arrangement, tracks=None, gm_drums=False):
                 end = round((note["start"]+note["duration"])*PPQ)
                 events.append((start,2,bytes([0x90|track["channel"],pitch,note["velocity"]])))
                 events.append((end,1,bytes([0x80|track["channel"],pitch,0])))
-        chunks.append(_chunk(events))
+        chunks.append(_chunk(events, end_tick))
     return b"MThd"+struct.pack(">IHHH",6,1,len(chunks),PPQ)+b"".join(chunks)
 
 
@@ -682,10 +711,18 @@ def write_bundle(arrangement, output_dir):
             (stage/"parts"/(track["role"]+".mid")).write_bytes(midi_bytes(arrangement,[track]))
         drum = next(t for t in arrangement["tracks"] if t["role"] == "DRUMS")
         (stage/"gm"/"DRUMS.mid").write_bytes(midi_bytes(arrangement,[drum],gm_drums=True))
-        text = "PLAIN MIDI - EIGHT-BAR STARTER\n\n"
+        if "section_bank" in arrangement:
+            (stage/"sections").mkdir()
+            for identity, section in arrangement["section_bank"].items():
+                (stage/"sections"/(identity+".mid")).write_bytes(midi_bytes(section["arrangement"]))
+            (stage/"sections"/"order.json").write_text(json.dumps(arrangement["sections"], indent=2)+"\n", encoding="utf-8")
+        text = f"PLAIN MIDI - {arrangement['bars']}-BAR {'SONG' if arrangement['bars'] == 32 else 'STARTER'}\n\n"
         text += f"{GENRES[arrangement['genre']]['label']} | {arrangement['key']} {arrangement['mode']} | {arrangement['bpm']} BPM\n"
         text += "Chords: " + " | ".join(c["symbol"] for c in arrangement["progression"])+"\n\n"
-        text += "Import arrangement.mid for all nine parts, or parts/*.mid individually.\nAll files start at beat zero and end at eight bars. No MIDI program changes.\n"
+        text += f"Import arrangement.mid for all nine parts, or parts/*.mid individually.\nThese files start at beat zero and end at {arrangement['bars']} bars. No MIDI program changes.\n"
+        if "section_bank" in arrangement:
+            text += "sections/A.mid through D.mid are the individual eight-bar sections.\n"
+            text += "Song order: " + " -> ".join(arrangement["section_order"]) + ". Shuffle rearranges these exact sections.\n"
         text += "NOISE is a held trigger for the noise instrument; mute it during plain MIDI audition.\n"
         text += "DRUMS uses the custom 32-pad map below. The four slots in each family\nare variations, not four sounds that should be layered on every hit.\n"
         text += "gm/DRUMS.mid is an alternative for General MIDI kits; do not import both.\n\n"
