@@ -1,0 +1,1709 @@
+{
+  "seed_range": [
+    0,
+    99
+  ],
+  "key": "A",
+  "mode": "minor",
+  "creativity_levels": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1
+  ],
+  "engine_sha256": "c6b3b96987353fb9924e7c088ce9670bc2e377857c612bad5e4bc9f0db797f93",
+  "comparison": "ordered chord start/duration and root-first pitch-class list; no velocities or instrument notes",
+  "caveat": "Finite deterministic sample; perceived musical quality and universal collision probability are not established.",
+  "genres": {
+    "trance": {
+      "0": {
+        "samples": 100,
+        "unique_progressions": 8,
+        "duplicate_samples": 92,
+        "chord_count_min": 4,
+        "chord_count_max": 4,
+        "chord_count_mean": 4.0,
+        "mean_chord_tones": 3.0,
+        "adjacent_pairs_with_common_tones": 195,
+        "adjacent_pairs": 300,
+        "common_tone_ratio": 0.65,
+        "source_counts": {
+          "diatonic": 400
+        }
+      },
+      "0.25": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 6,
+        "chord_count_max": 8,
+        "chord_count_mean": 7.06,
+        "mean_chord_tones": 3.559,
+        "adjacent_pairs_with_common_tones": 573,
+        "adjacent_pairs": 606,
+        "common_tone_ratio": 0.9455,
+        "source_counts": {
+          "diatonic": 706
+        }
+      },
+      "0.5": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 9,
+        "chord_count_max": 12,
+        "chord_count_mean": 10.4,
+        "mean_chord_tones": 3.675,
+        "adjacent_pairs_with_common_tones": 919,
+        "adjacent_pairs": 940,
+        "common_tone_ratio": 0.9777,
+        "source_counts": {
+          "diatonic": 1040
+        }
+      },
+      "0.75": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 15,
+        "chord_count_max": 20,
+        "chord_count_mean": 17.42,
+        "mean_chord_tones": 4.156,
+        "adjacent_pairs_with_common_tones": 1610,
+        "adjacent_pairs": 1642,
+        "common_tone_ratio": 0.9805,
+        "source_counts": {
+          "diatonic": 1565,
+          "cadential_dominant": 100,
+          "borrowed": 27,
+          "secondary_dominant": 50
+        }
+      },
+      "1": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 24,
+        "chord_count_max": 32,
+        "chord_count_mean": 28.2,
+        "mean_chord_tones": 4.222,
+        "adjacent_pairs_with_common_tones": 2629,
+        "adjacent_pairs": 2720,
+        "common_tone_ratio": 0.9665,
+        "source_counts": {
+          "diatonic": 2292,
+          "secondary_dominant": 322,
+          "cadential_dominant": 100,
+          "borrowed": 106
+        }
+      }
+    },
+    "hard_dance": {
+      "0": {
+        "samples": 100,
+        "unique_progressions": 8,
+        "duplicate_samples": 92,
+        "chord_count_min": 4,
+        "chord_count_max": 4,
+        "chord_count_mean": 4.0,
+        "mean_chord_tones": 3.0,
+        "adjacent_pairs_with_common_tones": 176,
+        "adjacent_pairs": 300,
+        "common_tone_ratio": 0.5867,
+        "source_counts": {
+          "diatonic": 400
+        }
+      },
+      "0.25": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 6,
+        "chord_count_max": 8,
+        "chord_count_mean": 6.92,
+        "mean_chord_tones": 3.562,
+        "adjacent_pairs_with_common_tones": 572,
+        "adjacent_pairs": 592,
+        "common_tone_ratio": 0.9662,
+        "source_counts": {
+          "diatonic": 692
+        }
+      },
+      "0.5": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 9,
+        "chord_count_max": 12,
+        "chord_count_mean": 10.39,
+        "mean_chord_tones": 3.678,
+        "adjacent_pairs_with_common_tones": 914,
+        "adjacent_pairs": 939,
+        "common_tone_ratio": 0.9734,
+        "source_counts": {
+          "diatonic": 1039
+        }
+      },
+      "0.75": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 15,
+        "chord_count_max": 20,
+        "chord_count_mean": 17.75,
+        "mean_chord_tones": 4.139,
+        "adjacent_pairs_with_common_tones": 1642,
+        "adjacent_pairs": 1675,
+        "common_tone_ratio": 0.9803,
+        "source_counts": {
+          "diatonic": 1595,
+          "secondary_dominant": 61,
+          "cadential_dominant": 100,
+          "borrowed": 19
+        }
+      },
+      "1": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 24,
+        "chord_count_max": 32,
+        "chord_count_mean": 27.94,
+        "mean_chord_tones": 4.215,
+        "adjacent_pairs_with_common_tones": 2624,
+        "adjacent_pairs": 2694,
+        "common_tone_ratio": 0.974,
+        "source_counts": {
+          "diatonic": 2280,
+          "secondary_dominant": 302,
+          "borrowed": 112,
+          "cadential_dominant": 100
+        }
+      }
+    },
+    "hard_trance": {
+      "0": {
+        "samples": 100,
+        "unique_progressions": 9,
+        "duplicate_samples": 91,
+        "chord_count_min": 4,
+        "chord_count_max": 4,
+        "chord_count_mean": 4.0,
+        "mean_chord_tones": 3.0,
+        "adjacent_pairs_with_common_tones": 191,
+        "adjacent_pairs": 300,
+        "common_tone_ratio": 0.6367,
+        "source_counts": {
+          "diatonic": 400
+        }
+      },
+      "0.25": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 6,
+        "chord_count_max": 8,
+        "chord_count_mean": 6.95,
+        "mean_chord_tones": 3.581,
+        "adjacent_pairs_with_common_tones": 565,
+        "adjacent_pairs": 595,
+        "common_tone_ratio": 0.9496,
+        "source_counts": {
+          "diatonic": 695
+        }
+      },
+      "0.5": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 9,
+        "chord_count_max": 12,
+        "chord_count_mean": 10.59,
+        "mean_chord_tones": 3.673,
+        "adjacent_pairs_with_common_tones": 928,
+        "adjacent_pairs": 959,
+        "common_tone_ratio": 0.9677,
+        "source_counts": {
+          "diatonic": 1059
+        }
+      },
+      "0.75": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 15,
+        "chord_count_max": 20,
+        "chord_count_mean": 17.55,
+        "mean_chord_tones": 4.134,
+        "adjacent_pairs_with_common_tones": 1627,
+        "adjacent_pairs": 1655,
+        "common_tone_ratio": 0.9831,
+        "source_counts": {
+          "diatonic": 1584,
+          "borrowed": 15,
+          "cadential_dominant": 100,
+          "secondary_dominant": 56
+        }
+      },
+      "1": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 24,
+        "chord_count_max": 32,
+        "chord_count_mean": 28.41,
+        "mean_chord_tones": 4.207,
+        "adjacent_pairs_with_common_tones": 2660,
+        "adjacent_pairs": 2741,
+        "common_tone_ratio": 0.9704,
+        "source_counts": {
+          "diatonic": 2304,
+          "borrowed": 107,
+          "secondary_dominant": 330,
+          "cadential_dominant": 100
+        }
+      }
+    },
+    "house": {
+      "0": {
+        "samples": 100,
+        "unique_progressions": 9,
+        "duplicate_samples": 91,
+        "chord_count_min": 4,
+        "chord_count_max": 4,
+        "chord_count_mean": 4.0,
+        "mean_chord_tones": 3.0,
+        "adjacent_pairs_with_common_tones": 205,
+        "adjacent_pairs": 300,
+        "common_tone_ratio": 0.6833,
+        "source_counts": {
+          "diatonic": 400
+        }
+      },
+      "0.25": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 6,
+        "chord_count_max": 8,
+        "chord_count_mean": 6.81,
+        "mean_chord_tones": 3.521,
+        "adjacent_pairs_with_common_tones": 553,
+        "adjacent_pairs": 581,
+        "common_tone_ratio": 0.9518,
+        "source_counts": {
+          "diatonic": 681
+        }
+      },
+      "0.5": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 9,
+        "chord_count_max": 12,
+        "chord_count_mean": 10.57,
+        "mean_chord_tones": 3.635,
+        "adjacent_pairs_with_common_tones": 923,
+        "adjacent_pairs": 957,
+        "common_tone_ratio": 0.9645,
+        "source_counts": {
+          "diatonic": 1057
+        }
+      },
+      "0.75": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 15,
+        "chord_count_max": 20,
+        "chord_count_mean": 17.52,
+        "mean_chord_tones": 4.106,
+        "adjacent_pairs_with_common_tones": 1622,
+        "adjacent_pairs": 1652,
+        "common_tone_ratio": 0.9818,
+        "source_counts": {
+          "diatonic": 1564,
+          "secondary_dominant": 63,
+          "cadential_dominant": 100,
+          "borrowed": 25
+        }
+      },
+      "1": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 24,
+        "chord_count_max": 32,
+        "chord_count_mean": 27.8,
+        "mean_chord_tones": 4.172,
+        "adjacent_pairs_with_common_tones": 2603,
+        "adjacent_pairs": 2680,
+        "common_tone_ratio": 0.9713,
+        "source_counts": {
+          "diatonic": 2268,
+          "secondary_dominant": 308,
+          "borrowed": 104,
+          "cadential_dominant": 100
+        }
+      }
+    },
+    "hard_house": {
+      "0": {
+        "samples": 100,
+        "unique_progressions": 10,
+        "duplicate_samples": 90,
+        "chord_count_min": 4,
+        "chord_count_max": 4,
+        "chord_count_mean": 4.0,
+        "mean_chord_tones": 3.0,
+        "adjacent_pairs_with_common_tones": 168,
+        "adjacent_pairs": 300,
+        "common_tone_ratio": 0.56,
+        "source_counts": {
+          "diatonic": 400
+        }
+      },
+      "0.25": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 6,
+        "chord_count_max": 8,
+        "chord_count_mean": 7.05,
+        "mean_chord_tones": 3.539,
+        "adjacent_pairs_with_common_tones": 571,
+        "adjacent_pairs": 605,
+        "common_tone_ratio": 0.9438,
+        "source_counts": {
+          "diatonic": 705
+        }
+      },
+      "0.5": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 9,
+        "chord_count_max": 12,
+        "chord_count_mean": 10.55,
+        "mean_chord_tones": 3.658,
+        "adjacent_pairs_with_common_tones": 929,
+        "adjacent_pairs": 955,
+        "common_tone_ratio": 0.9728,
+        "source_counts": {
+          "diatonic": 1055
+        }
+      },
+      "0.75": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 15,
+        "chord_count_max": 20,
+        "chord_count_mean": 17.29,
+        "mean_chord_tones": 4.126,
+        "adjacent_pairs_with_common_tones": 1592,
+        "adjacent_pairs": 1629,
+        "common_tone_ratio": 0.9773,
+        "source_counts": {
+          "diatonic": 1558,
+          "cadential_dominant": 100,
+          "secondary_dominant": 54,
+          "borrowed": 17
+        }
+      },
+      "1": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 24,
+        "chord_count_max": 32,
+        "chord_count_mean": 27.75,
+        "mean_chord_tones": 4.192,
+        "adjacent_pairs_with_common_tones": 2597,
+        "adjacent_pairs": 2675,
+        "common_tone_ratio": 0.9708,
+        "source_counts": {
+          "diatonic": 2257,
+          "secondary_dominant": 311,
+          "borrowed": 107,
+          "cadential_dominant": 100
+        }
+      }
+    },
+    "hardstyle": {
+      "0": {
+        "samples": 100,
+        "unique_progressions": 8,
+        "duplicate_samples": 92,
+        "chord_count_min": 4,
+        "chord_count_max": 4,
+        "chord_count_mean": 4.0,
+        "mean_chord_tones": 3.0,
+        "adjacent_pairs_with_common_tones": 198,
+        "adjacent_pairs": 300,
+        "common_tone_ratio": 0.66,
+        "source_counts": {
+          "diatonic": 400
+        }
+      },
+      "0.25": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 6,
+        "chord_count_max": 8,
+        "chord_count_mean": 6.89,
+        "mean_chord_tones": 3.546,
+        "adjacent_pairs_with_common_tones": 560,
+        "adjacent_pairs": 589,
+        "common_tone_ratio": 0.9508,
+        "source_counts": {
+          "diatonic": 689
+        }
+      },
+      "0.5": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 9,
+        "chord_count_max": 12,
+        "chord_count_mean": 10.63,
+        "mean_chord_tones": 3.661,
+        "adjacent_pairs_with_common_tones": 934,
+        "adjacent_pairs": 963,
+        "common_tone_ratio": 0.9699,
+        "source_counts": {
+          "diatonic": 1063
+        }
+      },
+      "0.75": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 15,
+        "chord_count_max": 20,
+        "chord_count_mean": 17.47,
+        "mean_chord_tones": 4.083,
+        "adjacent_pairs_with_common_tones": 1621,
+        "adjacent_pairs": 1647,
+        "common_tone_ratio": 0.9842,
+        "source_counts": {
+          "diatonic": 1576,
+          "cadential_dominant": 100,
+          "secondary_dominant": 48,
+          "borrowed": 23
+        }
+      },
+      "1": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 24,
+        "chord_count_max": 32,
+        "chord_count_mean": 27.83,
+        "mean_chord_tones": 4.199,
+        "adjacent_pairs_with_common_tones": 2604,
+        "adjacent_pairs": 2683,
+        "common_tone_ratio": 0.9706,
+        "source_counts": {
+          "diatonic": 2251,
+          "secondary_dominant": 336,
+          "cadential_dominant": 100,
+          "borrowed": 96
+        }
+      }
+    },
+    "pop": {
+      "0": {
+        "samples": 100,
+        "unique_progressions": 9,
+        "duplicate_samples": 91,
+        "chord_count_min": 4,
+        "chord_count_max": 4,
+        "chord_count_mean": 4.0,
+        "mean_chord_tones": 3.0,
+        "adjacent_pairs_with_common_tones": 188,
+        "adjacent_pairs": 300,
+        "common_tone_ratio": 0.6267,
+        "source_counts": {
+          "diatonic": 400
+        }
+      },
+      "0.25": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 6,
+        "chord_count_max": 8,
+        "chord_count_mean": 7.05,
+        "mean_chord_tones": 3.556,
+        "adjacent_pairs_with_common_tones": 576,
+        "adjacent_pairs": 605,
+        "common_tone_ratio": 0.9521,
+        "source_counts": {
+          "diatonic": 705
+        }
+      },
+      "0.5": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 9,
+        "chord_count_max": 12,
+        "chord_count_mean": 10.45,
+        "mean_chord_tones": 3.676,
+        "adjacent_pairs_with_common_tones": 915,
+        "adjacent_pairs": 945,
+        "common_tone_ratio": 0.9683,
+        "source_counts": {
+          "diatonic": 1045
+        }
+      },
+      "0.75": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 15,
+        "chord_count_max": 20,
+        "chord_count_mean": 17.28,
+        "mean_chord_tones": 4.105,
+        "adjacent_pairs_with_common_tones": 1586,
+        "adjacent_pairs": 1628,
+        "common_tone_ratio": 0.9742,
+        "source_counts": {
+          "diatonic": 1555,
+          "cadential_dominant": 100,
+          "borrowed": 18,
+          "secondary_dominant": 55
+        }
+      },
+      "1": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 24,
+        "chord_count_max": 32,
+        "chord_count_mean": 27.75,
+        "mean_chord_tones": 4.189,
+        "adjacent_pairs_with_common_tones": 2597,
+        "adjacent_pairs": 2675,
+        "common_tone_ratio": 0.9708,
+        "source_counts": {
+          "diatonic": 2234,
+          "secondary_dominant": 324,
+          "borrowed": 117,
+          "cadential_dominant": 100
+        }
+      }
+    },
+    "rap": {
+      "0": {
+        "samples": 100,
+        "unique_progressions": 8,
+        "duplicate_samples": 92,
+        "chord_count_min": 4,
+        "chord_count_max": 4,
+        "chord_count_mean": 4.0,
+        "mean_chord_tones": 3.0,
+        "adjacent_pairs_with_common_tones": 197,
+        "adjacent_pairs": 300,
+        "common_tone_ratio": 0.6567,
+        "source_counts": {
+          "diatonic": 400
+        }
+      },
+      "0.25": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 6,
+        "chord_count_max": 8,
+        "chord_count_mean": 6.93,
+        "mean_chord_tones": 3.553,
+        "adjacent_pairs_with_common_tones": 558,
+        "adjacent_pairs": 593,
+        "common_tone_ratio": 0.941,
+        "source_counts": {
+          "diatonic": 693
+        }
+      },
+      "0.5": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 9,
+        "chord_count_max": 12,
+        "chord_count_mean": 10.44,
+        "mean_chord_tones": 3.676,
+        "adjacent_pairs_with_common_tones": 920,
+        "adjacent_pairs": 944,
+        "common_tone_ratio": 0.9746,
+        "source_counts": {
+          "diatonic": 1044
+        }
+      },
+      "0.75": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 15,
+        "chord_count_max": 20,
+        "chord_count_mean": 17.8,
+        "mean_chord_tones": 4.11,
+        "adjacent_pairs_with_common_tones": 1647,
+        "adjacent_pairs": 1680,
+        "common_tone_ratio": 0.9804,
+        "source_counts": {
+          "diatonic": 1595,
+          "cadential_dominant": 100,
+          "borrowed": 25,
+          "secondary_dominant": 60
+        }
+      },
+      "1": {
+        "samples": 100,
+        "unique_progressions": 100,
+        "duplicate_samples": 0,
+        "chord_count_min": 24,
+        "chord_count_max": 32,
+        "chord_count_mean": 27.61,
+        "mean_chord_tones": 4.201,
+        "adjacent_pairs_with_common_tones": 2581,
+        "adjacent_pairs": 2661,
+        "common_tone_ratio": 0.9699,
+        "source_counts": {
+          "diatonic": 2224,
+          "secondary_dominant": 323,
+          "cadential_dominant": 100,
+          "borrowed": 114
+        }
+      }
+    }
+  },
+  "examples": {
+    "0": [
+      {
+        "bar": 0.0,
+        "bars": 2.0,
+        "symbol": "Am",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4
+        ],
+        "source": "diatonic",
+        "start": 0.0,
+        "duration": 8.0
+      },
+      {
+        "bar": 2.0,
+        "bars": 2.0,
+        "symbol": "Dm",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9
+        ],
+        "source": "diatonic",
+        "start": 8.0,
+        "duration": 8.0
+      },
+      {
+        "bar": 4.0,
+        "bars": 2.0,
+        "symbol": "G",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 16.0,
+        "duration": 8.0
+      },
+      {
+        "bar": 6.0,
+        "bars": 2.0,
+        "symbol": "C",
+        "root": 48,
+        "pitch_classes": [
+          0,
+          4,
+          7
+        ],
+        "source": "diatonic",
+        "start": 24.0,
+        "duration": 8.0
+      }
+    ],
+    "0.25": [
+      {
+        "bar": 0.0,
+        "bars": 2.0,
+        "symbol": "Am",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4
+        ],
+        "source": "diatonic",
+        "start": 0.0,
+        "duration": 8.0
+      },
+      {
+        "bar": 2.0,
+        "bars": 2.0,
+        "symbol": "Dm",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9
+        ],
+        "source": "diatonic",
+        "start": 8.0,
+        "duration": 8.0
+      },
+      {
+        "bar": 4.0,
+        "bars": 2.0,
+        "symbol": "Gadd9",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          9
+        ],
+        "source": "diatonic",
+        "start": 16.0,
+        "duration": 8.0
+      },
+      {
+        "bar": 6.0,
+        "bars": 1.0,
+        "symbol": "C",
+        "root": 48,
+        "pitch_classes": [
+          0,
+          4,
+          7
+        ],
+        "source": "diatonic",
+        "start": 24.0,
+        "duration": 4.0
+      },
+      {
+        "bar": 7.0,
+        "bars": 0.25,
+        "symbol": "Em7",
+        "root": 52,
+        "pitch_classes": [
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 28.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 7.25,
+        "bars": 0.75,
+        "symbol": "Amadd9",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          11
+        ],
+        "source": "diatonic",
+        "start": 29.0,
+        "duration": 3.0
+      }
+    ],
+    "0.5": [
+      {
+        "bar": 0.0,
+        "bars": 1.0,
+        "symbol": "Am7",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          7
+        ],
+        "source": "diatonic",
+        "start": 0.0,
+        "duration": 4.0
+      },
+      {
+        "bar": 1.0,
+        "bars": 0.75,
+        "symbol": "Dm",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9
+        ],
+        "source": "diatonic",
+        "start": 4.0,
+        "duration": 3.0
+      },
+      {
+        "bar": 1.75,
+        "bars": 0.25,
+        "symbol": "Amadd9",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          11
+        ],
+        "source": "diatonic",
+        "start": 7.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 2.0,
+        "bars": 0.25,
+        "symbol": "Dm",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9
+        ],
+        "source": "diatonic",
+        "start": 8.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 2.25,
+        "bars": 1.25,
+        "symbol": "Em7",
+        "root": 52,
+        "pitch_classes": [
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 9.0,
+        "duration": 5.0
+      },
+      {
+        "bar": 3.5,
+        "bars": 0.5,
+        "symbol": "Dmadd9",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9,
+          4
+        ],
+        "source": "diatonic",
+        "start": 14.0,
+        "duration": 2.0
+      },
+      {
+        "bar": 4.0,
+        "bars": 1.25,
+        "symbol": "Gsus4",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          0,
+          2
+        ],
+        "source": "diatonic",
+        "start": 16.0,
+        "duration": 5.0
+      },
+      {
+        "bar": 5.25,
+        "bars": 0.75,
+        "symbol": "Em7",
+        "root": 52,
+        "pitch_classes": [
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 21.0,
+        "duration": 3.0
+      },
+      {
+        "bar": 6.0,
+        "bars": 0.25,
+        "symbol": "Cadd9",
+        "root": 48,
+        "pitch_classes": [
+          0,
+          4,
+          7,
+          2
+        ],
+        "source": "diatonic",
+        "start": 24.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 6.25,
+        "bars": 0.75,
+        "symbol": "Am7",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          7
+        ],
+        "source": "diatonic",
+        "start": 25.0,
+        "duration": 3.0
+      },
+      {
+        "bar": 7.0,
+        "bars": 0.25,
+        "symbol": "Em7",
+        "root": 52,
+        "pitch_classes": [
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 28.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 7.25,
+        "bars": 0.75,
+        "symbol": "Amadd9",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          11
+        ],
+        "source": "diatonic",
+        "start": 29.0,
+        "duration": 3.0
+      }
+    ],
+    "0.75": [
+      {
+        "bar": 0.0,
+        "bars": 0.5,
+        "symbol": "Am7",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          7
+        ],
+        "source": "diatonic",
+        "start": 0.0,
+        "duration": 2.0
+      },
+      {
+        "bar": 0.5,
+        "bars": 0.5,
+        "symbol": "Dsus4",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          7,
+          9
+        ],
+        "source": "diatonic",
+        "start": 2.0,
+        "duration": 2.0
+      },
+      {
+        "bar": 1.0,
+        "bars": 0.75,
+        "symbol": "Em7",
+        "root": 52,
+        "pitch_classes": [
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 4.0,
+        "duration": 3.0
+      },
+      {
+        "bar": 1.75,
+        "bars": 0.25,
+        "symbol": "Asus2",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          11,
+          4
+        ],
+        "source": "diatonic",
+        "start": 7.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 2.0,
+        "bars": 0.25,
+        "symbol": "Dm11",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9,
+          0,
+          4,
+          7
+        ],
+        "source": "diatonic",
+        "start": 8.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 2.25,
+        "bars": 0.25,
+        "symbol": "G",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 9.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 2.5,
+        "bars": 0.75,
+        "symbol": "G6",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          4
+        ],
+        "source": "diatonic",
+        "start": 10.0,
+        "duration": 3.0
+      },
+      {
+        "bar": 3.25,
+        "bars": 0.25,
+        "symbol": "Amadd9",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          11
+        ],
+        "source": "diatonic",
+        "start": 13.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 3.5,
+        "bars": 0.25,
+        "symbol": "Dm9",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9,
+          0,
+          4
+        ],
+        "source": "diatonic",
+        "start": 14.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 3.75,
+        "bars": 0.25,
+        "symbol": "G7",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          5
+        ],
+        "source": "diatonic",
+        "start": 15.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 4.0,
+        "bars": 0.75,
+        "symbol": "Cmaj7",
+        "root": 48,
+        "pitch_classes": [
+          0,
+          4,
+          7,
+          11
+        ],
+        "source": "diatonic",
+        "start": 16.0,
+        "duration": 3.0
+      },
+      {
+        "bar": 4.75,
+        "bars": 0.25,
+        "symbol": "G11",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          5,
+          9,
+          0
+        ],
+        "source": "diatonic",
+        "start": 19.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 5.0,
+        "bars": 0.25,
+        "symbol": "Dm7",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9,
+          0
+        ],
+        "source": "diatonic",
+        "start": 20.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 5.25,
+        "bars": 0.75,
+        "symbol": "Gsus2",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          9,
+          2
+        ],
+        "source": "diatonic",
+        "start": 21.0,
+        "duration": 3.0
+      },
+      {
+        "bar": 6.0,
+        "bars": 0.25,
+        "symbol": "C6",
+        "root": 48,
+        "pitch_classes": [
+          0,
+          4,
+          7,
+          9
+        ],
+        "source": "diatonic",
+        "start": 24.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 6.25,
+        "bars": 0.5,
+        "symbol": "Am11",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 25.0,
+        "duration": 2.0
+      },
+      {
+        "bar": 6.75,
+        "bars": 0.25,
+        "symbol": "B7",
+        "root": 59,
+        "pitch_classes": [
+          11,
+          3,
+          6,
+          9
+        ],
+        "source": "secondary_dominant",
+        "secondary_target": 4,
+        "start": 27.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 7.0,
+        "bars": 0.25,
+        "symbol": "E7",
+        "root": 52,
+        "pitch_classes": [
+          4,
+          8,
+          11,
+          2
+        ],
+        "source": "cadential_dominant",
+        "start": 28.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 7.25,
+        "bars": 0.75,
+        "symbol": "Am11",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 29.0,
+        "duration": 3.0
+      }
+    ],
+    "1": [
+      {
+        "bar": 0.0,
+        "bars": 0.5,
+        "symbol": "Am7",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          7
+        ],
+        "source": "diatonic",
+        "start": 0.0,
+        "duration": 2.0
+      },
+      {
+        "bar": 0.5,
+        "bars": 0.25,
+        "symbol": "Dsus4",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          7,
+          9
+        ],
+        "source": "diatonic",
+        "start": 2.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 0.75,
+        "bars": 0.25,
+        "symbol": "Em7",
+        "root": 52,
+        "pitch_classes": [
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 3.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 1.0,
+        "bars": 0.75,
+        "symbol": "Fsus2",
+        "root": 53,
+        "pitch_classes": [
+          5,
+          7,
+          0
+        ],
+        "source": "diatonic",
+        "start": 4.0,
+        "duration": 3.0
+      },
+      {
+        "bar": 1.75,
+        "bars": 0.25,
+        "symbol": "Am11",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 7.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 2.0,
+        "bars": 0.25,
+        "symbol": "Dm11",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9,
+          0,
+          4,
+          7
+        ],
+        "source": "diatonic",
+        "start": 8.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 2.25,
+        "bars": 0.25,
+        "symbol": "G6",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          4
+        ],
+        "source": "diatonic",
+        "start": 9.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 2.5,
+        "bars": 0.25,
+        "symbol": "Am9",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          7,
+          11
+        ],
+        "source": "diatonic",
+        "start": 10.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 2.75,
+        "bars": 0.5,
+        "symbol": "Dm11",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          5,
+          9,
+          0,
+          4,
+          7
+        ],
+        "source": "diatonic",
+        "start": 11.0,
+        "duration": 2.0
+      },
+      {
+        "bar": 3.25,
+        "bars": 0.25,
+        "symbol": "Gadd9",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          9
+        ],
+        "source": "diatonic",
+        "start": 13.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 3.5,
+        "bars": 0.25,
+        "symbol": "D",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          6,
+          9
+        ],
+        "source": "borrowed",
+        "start": 14.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 3.75,
+        "bars": 0.25,
+        "symbol": "D7",
+        "root": 50,
+        "pitch_classes": [
+          2,
+          6,
+          9,
+          0
+        ],
+        "source": "secondary_dominant",
+        "secondary_target": 7,
+        "start": 15.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 4.0,
+        "bars": 0.25,
+        "symbol": "G9",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          5,
+          9
+        ],
+        "source": "diatonic",
+        "start": 16.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 4.25,
+        "bars": 0.25,
+        "symbol": "Csus2",
+        "root": 48,
+        "pitch_classes": [
+          0,
+          2,
+          7
+        ],
+        "source": "diatonic",
+        "start": 17.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 4.5,
+        "bars": 0.25,
+        "symbol": "F#7",
+        "root": 54,
+        "pitch_classes": [
+          6,
+          10,
+          1,
+          4
+        ],
+        "source": "secondary_dominant",
+        "secondary_target": 11,
+        "start": 18.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 4.75,
+        "bars": 0.25,
+        "symbol": "Bm7b5",
+        "root": 59,
+        "pitch_classes": [
+          11,
+          2,
+          5,
+          9
+        ],
+        "source": "diatonic",
+        "start": 19.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 5.0,
+        "bars": 0.25,
+        "symbol": "G11",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          5,
+          9,
+          0
+        ],
+        "source": "diatonic",
+        "start": 20.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 5.25,
+        "bars": 0.25,
+        "symbol": "Esus4",
+        "root": 52,
+        "pitch_classes": [
+          4,
+          9,
+          11
+        ],
+        "source": "diatonic",
+        "start": 21.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 5.5,
+        "bars": 0.25,
+        "symbol": "Cmaj9",
+        "root": 48,
+        "pitch_classes": [
+          0,
+          4,
+          7,
+          11,
+          2
+        ],
+        "source": "diatonic",
+        "start": 22.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 5.75,
+        "bars": 0.25,
+        "symbol": "G9",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          5,
+          9
+        ],
+        "source": "diatonic",
+        "start": 23.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 6.0,
+        "bars": 0.25,
+        "symbol": "Cadd9",
+        "root": 48,
+        "pitch_classes": [
+          0,
+          4,
+          7,
+          2
+        ],
+        "source": "diatonic",
+        "start": 24.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 6.25,
+        "bars": 0.5,
+        "symbol": "Fadd9",
+        "root": 53,
+        "pitch_classes": [
+          5,
+          9,
+          0,
+          7
+        ],
+        "source": "diatonic",
+        "start": 25.0,
+        "duration": 2.0
+      },
+      {
+        "bar": 6.75,
+        "bars": 0.25,
+        "symbol": "Gadd9",
+        "root": 55,
+        "pitch_classes": [
+          7,
+          11,
+          2,
+          9
+        ],
+        "source": "diatonic",
+        "start": 27.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 7.0,
+        "bars": 0.25,
+        "symbol": "Bm7b5",
+        "root": 59,
+        "pitch_classes": [
+          11,
+          2,
+          5,
+          9
+        ],
+        "source": "diatonic",
+        "start": 28.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 7.25,
+        "bars": 0.25,
+        "symbol": "E7",
+        "root": 52,
+        "pitch_classes": [
+          4,
+          8,
+          11,
+          2
+        ],
+        "source": "cadential_dominant",
+        "start": 29.0,
+        "duration": 1.0
+      },
+      {
+        "bar": 7.5,
+        "bars": 0.5,
+        "symbol": "Amadd9",
+        "root": 57,
+        "pitch_classes": [
+          9,
+          0,
+          4,
+          11
+        ],
+        "source": "diatonic",
+        "start": 30.0,
+        "duration": 2.0
+      }
+    ]
+  },
+  "total_progressions": 4000,
+  "elapsed_seconds": 2.16,
+  "mean_generation_ms": 0.54
+}

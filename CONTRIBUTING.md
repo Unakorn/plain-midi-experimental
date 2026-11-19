@@ -14,6 +14,7 @@ Manual testing still needed:
    Verify the new seeds produce different rhythms/melodies; enable Repeat seed to reproduce a specific idea. Keep expected genre anchors in mind when comparing.
 6. For developers with the exact compatible private FLP layout: open the exported copy, inspect all sample slots and effects, verify tempo during playback, listen through the full eight bars, and confirm save/reopen works. The public repo has no private fixture and cannot exercise this path on its own.
 7. On Windows, drag the Drag MIDI button into Explorer, Desktop and your DAW. Check one complete MIDI file arrives, all nine parts import correctly, the original remains available, and Escape cancels cleanly. Report the destination application and whether it runs as administrator when reporting a rejected drop.
+8. With Generate chords enabled, compare the same seed at 0%, 25%, 50%, 75% and 100% chord creativity. Check the increasing count, more frequent changes, extensions and common-tone pad/chord overlaps. Listen to bass/sub at every change. At higher levels some chords intentionally leave the base scale. Keep a lead and regenerate: its exact harmony should remain. Unkeep it before changing harmony settings. Also test manual sequences longer than eight chords and non-power-of-two counts such as five or seven.
 
 Bug reports should include OS, Python and DAW versions, settings and seed, expected behavior, actual behavior, and a minimal MIDI or sanitized reproduction if useful. Avoid uploading commercial samples or private FLPs/presets.
 

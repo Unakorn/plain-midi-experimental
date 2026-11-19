@@ -14,6 +14,7 @@ This is an early experiment. Automated structural checks have passed; that does 
 - Nine MIDI parts: drums, pad, pluck, chords, arpeggio, lead, bass, sub-bass, and an optional-use noise trigger.
 - A 32-sound drum kit: four kicks, snares, claps, closed hats, open hats, rides, shakers, and toms.
 - Separate recipes for trance, hard dance, hard trance, house, hard house, hardstyle, pop, and rap.
+- A separate chord-creativity control for fresh shared progressions, more changes, richer chords, and controlled shared-note overlaps.
 - Multitrack and per-part MIDI, exact note data in JSON, raw WAVs, and an optional plain-tone preview.
 
 The sounds are dry procedural starters inspired by basic 808/909 synthesis ideas. They are **not** commercial drum samples, circuit emulations, or finished hardstyle kicks. The genre recipes are intentionally simple starting points.
@@ -32,6 +33,8 @@ Choose a genre, key and tempo, then **Generate to Desktop**. The public release 
 
 Generate chooses a fresh seed by default. **Regenerate** always makes a fresh idea. Enable **Repeat seed** when you want Generate to reproduce the displayed seed.
 
+**Generate chords** is on by default in the GUI. Raise **Chord creativity** to explore more chord changes across the same eight bars, richer extensions, and overlapping shared tones in the pad/chord parts. All pitched parts follow that new timeline. Turn Generate chords off to enter your own **1–32-chord** sequence instead.
+
 On Windows, hold **Drag MIDI** after generation and drag into your DAW, Desktop, or a folder. It offers one saved multitrack `.mid` containing all nine parts, using native Windows file dragging with copy-only behavior. The session-named source stays in the companion folder. Escape cancels. A receiving DAW controls track import; MIDI does not contain the instrument presets, WAVs, or FLP automation. Other platforms can import the saved MIDI directly; native drag-out is currently Windows-only.
 
 The first kit needs a few seconds to synthesize. To prepare reusable kits for quicker exports:
@@ -48,6 +51,7 @@ The cache is checked against the synthesis source and sound profile. Changing th
 python make.py --desktop --genre hard_trance --key F# --seed 17
 python make.py --genre pop --key D --mode major --progression "1 5 6 4" --output ./ideas
 python make.py --genre rap --key A --bpm 92 --no-preview --output ./ideas
+python make.py --genre trance --auto-chords --chord-creativity .85 --seed 17 --no-preview --output ./ideas
 python make.py --help
 ```
 
@@ -55,20 +59,35 @@ python make.py --help
 
 ## Controls and editing
 
-Use 1, 2, 4, or 8 scale degrees, such as `1 6 3 7`, or explicit chords such as `Am F C G`. The chords divide the eight bars equally. Basic triads, suspended chords, sevenths, and several extensions are supported; `CHORDS` in `generator.py` lists them.
+**Generated harmony:** Chord creativity controls the number of changes, extensions, harmonic movement and shared-note overlaps. The sequence follows a tonal arc with a resolution. At high creativity, sparse borrowed chords and resolving secondary dominants add color; some notes may fall outside the selected base scale. All pitched parts use the actual chord tones. Bass/sub follow the current chord root. Only pad/chord voices shared by neighboring chords can sustain across changes; low notes and melodic lines are clipped at the boundaries.
 
-Bass and sub-bass follow the chord roots. Other pitched parts use chord tones with their own rhythms. Density controls how busy parts get; swing delays offbeat positions; variation adds alternate phrase endings and details. New seeds change rhythms and melodies even at zero variation. Keep selected parts while rerolling others. Kept melodic parts require unchanged harmony.
+| Chord creativity | Chords across eight bars |
+|---|---|
+| 0% | 4 |
+| 25% | 6–8 |
+| 50% | 9–12 |
+| 75% | 15–20 |
+| 100% | 24–32 |
+
+The exact count depends on the seed. Raising creativity for the same seed refines its timing and never reduces its chord count. The UI shows the actual count, all chord names, and change markers within each bar.
+
+**Manual harmony:** turn Generate chords off and enter any 1–32 scale degrees, such as `1 6 3 7`, or explicit chords such as `Am F C G`. The chords divide the eight bars as evenly as the shared MIDI/FLP timing grid permits. Basic triads, suspended chords, sevenths, and several extensions are supported; `CHORDS` in `harmony.py` lists them. The manual field is ignored in generated mode. Chord creativity applies to generated mode; manual harmony is kept exact. CLI calls remain manual by default for compatibility; add `--auto-chords` for automatic harmony.
+
+Density controls how busy parts get; swing delays offbeat positions; phrase variation adds alternate rhythmic endings and details. These are separate from chord creativity. New seeds change rhythms and melodies even at zero phrase variation. Keeping any melodic part also keeps the exact generated chord timeline, so newly generated parts still fit. Uncheck kept melodic parts before changing genre, key, scale, chord mode or chord creativity. Keeping drums alone allows new harmony.
 
 The same settings and seed reproduce a generated idea within one engine version. Exact notes are saved in `arrangement.json`; use its saved MIDI to retain any manually edited or previously kept parts. Loading a JSON file through `--config` reads settings and regenerates notes. Seeds from an older engine can produce different notes after an update, so keep saved MIDI for exact recall.
 
-Two-bar rhythm cells and chord-tone contours form A / A-prime / B / A phrases. Roles and percussion families have independent seeded choices. The EDM kick/backbeat, sustained pad, block chords and sub foundation stay deliberately simple; bass, lead, pluck, arpeggio and percussion get fresh phrasing.
+Two-bar rhythm cells and chord-tone contours form A / A-prime / B / A phrases, adapted to the shared harmonic timeline, including changes within a bar. Roles and percussion families have independent seeded choices. The EDM kick/backbeat stays recognizable; bass, lead, pluck, arpeggio and percussion get fresh phrasing.
 
-A deterministic audit of **1,000 seeds per genre (8,000 arrangements)** found no repeated complete arrangements, drum structures, lead rhythms, bass rhythms, or pluck structures at the default settings. Fingerprints ignore velocities and drum sound variants and quantize timing to sixteenths. Individual pitch contours and arpeggios sometimes repeat. This is a finite sample, not a guaranteed 1% repeat probability or a measure of perceived musical similarity. See [the complete measurements](validation/variety_v2_metrics.json). Reproduce with `python tests/test_variety_v2.py --audit` (writes `variety_v2_metrics.json` in the repository root).
+A deterministic rhythm audit of **1,000 seeds per genre (8,000 arrangements)** with manual four-chord harmony found no repeated complete arrangements, drum structures, lead rhythms, bass rhythms, or pluck structures. Fingerprints ignore velocities and drum sound variants and quantize timing to sixteenths. Individual pitch contours and arpeggios sometimes repeat. This is a finite sample, not a guaranteed 1% repeat probability or a measure of perceived musical similarity. See [the complete measurements](validation/variety_v2_metrics.json). Reproduce with `python tests/test_variety_v2.py --audit` (writes `variety_v2_metrics.json` in the repository root).
+
+The new harmony audit covers **4,000 progressions**: 100 seeds per genre at five creativity levels. At each tested nonzero level, every genre produced 100 distinct timed progressions; the small four-chord bank at 0% intentionally repeats. See [chord audit and examples](validation/harmony_metrics.json) and [renderer timings/overlaps](validation/chord_renderer_metrics.json). Run `python tests/test_harmony.py --audit` to reproduce the chord audit; it writes `harmony_metrics.json` in the repository root.
 
 | File | Change here |
 |---|---|
 | `recipes.json` | Genre tempos, progression defaults, beat anchors and candidate rhythms |
 | `generator.py` | Rhythm cells, phrase plans, chords, melodic contours, MIDI writing |
+| `harmony.py` | Creative progressions, chord vocabulary and harmonic timing |
 | `drum_synth.py` | Drum synthesis, tuning, decay, brightness |
 | `workflow.py` | Session saving, Desktop names, part locks, kit cache |
 | `file_drag.py` | Native Windows copy-only file dragging |
@@ -116,5 +135,7 @@ python -m unittest discover -s tests -v
 Tests cover chord membership, root-following bass, exact eight-bar MIDI length, paired note events, deterministic generation, WAV file validity, output naming, and failure cleanup. They cannot determine whether a groove sounds good. See [CONTRIBUTING.md](CONTRIBUTING.md) for the DAW/listening checks still needed.
 
 The drag/variety update passed 26 public test groups on Windows. Native tests exercise real Shell file data, Unicode filenames, format enumeration, and cleanup; the interactive drag loop is substituted in automated tests. A user confirmed Drag MIDI worked in a manual test on the development Windows PC; the specific destination was not recorded. Broader destination and DAW track-import compatibility still needs testing. The diversity audit above is separate from the normal test suite.
+
+The chord-creativity update passes **40 public test groups**. They include all manual chord counts, generated harmony, chromatic-chord metadata, exact timeline retention with kept parts, common-tone crossings, MIDI note pairing, and shared 96/480-PPQ timing. Independent review also checked 400 mixed arrangements after actual native-note conversion. These checks do not establish whether the new progressions sound good with your chosen patches; listening and DAW testing remain necessary.
 
 MIT licensed. Please report the genre, settings, seed, OS, Python version, DAW/version, and the smallest reproducible problem. Do not upload private projects, presets, account data, or commercial sample packs.

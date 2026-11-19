@@ -152,7 +152,7 @@ class GeneratorTests(unittest.TestCase):
 
     def test_invalid_input(self):
         bad=[{"genre":"fake"},{"bpm":0},{"bpm":float("nan")},{"seed":True},
-             {"key":"H"},{"mode":"fake"},{"progression":"Am C D"},
+             {"key":"H"},{"mode":"fake"},{"progression":" ".join(["Am"]*33)},
              {"progression":"1 2 3 8"},{"progression":"An F"},
              {"swing":.7},{"density":0},{"drum_variants":"false"},
              {"muted_roles":["INVALID"]},{"typo":1}]

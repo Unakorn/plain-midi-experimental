@@ -11,7 +11,7 @@ import secrets
 import shutil
 import tempfile
 
-from generator import generate, write_bundle
+from generator import generate, write_bundle, validate_config
 
 APP_DIR = Path(__file__).resolve().parent
 
@@ -134,6 +134,24 @@ def _harmony(arrangement):
             for p in arrangement["progression"]]
 
 
+def _generate_with_kept_harmony(config, previous, keep_roles):
+    """A retained melodic part keeps its exact harmonic timeline as well."""
+    settings = validate_config(config)
+    pitched = set(keep_roles) - {"DRUMS", "NOISE"}
+    override = None
+    if pitched and previous is not None:
+        prior = validate_config(previous["config"])
+        if settings["auto_chords"] or prior["auto_chords"]:
+            controls = ("genre", "key", "mode", "auto_chords", "chord_creativity")
+            if any(settings[key] != prior[key] for key in controls):
+                raise ValueError("Chord settings changed. Uncheck kept melodic parts before changing genre, key, scale, chord mode or chord creativity.")
+            override = previous["progression"]
+    arrangement = generate(settings, progression_override=override)
+    if override is not None:
+        arrangement["harmony_kept"] = True
+    return keep_selected_parts(arrangement, previous, keep_roles)
+
+
 def keep_selected_parts(new, previous, roles):
     """Keep absolute notes only when the harmony remains exactly compatible."""
     roles = set(roles)
@@ -169,7 +187,7 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
     if flp and template is None:
         raise ValueError("FLP export requires PLAIN_MIDI_TEMPLATE. Omit it to generate MIDI and raw WAVs.")
     status("Writing the shared chord progression and instrument parts…")
-    arrangement = keep_selected_parts(generate(config), previous, keep_roles)
+    arrangement = _generate_with_kept_harmony(config, previous, keep_roles)
     parent = Path(output_root or APP_DIR / "generated").resolve()
     parent.mkdir(parents=True, exist_ok=True)
     name = _session_name or _random_session_name(arrangement["genre"], parent)
@@ -245,6 +263,9 @@ def build_session(config, output_root=None, *, previous=None, keep_roles=(),
         if keep_roles:
             readme += ["Kept parts: " + ", ".join(sorted(keep_roles)),
                        "Their exact notes are saved in arrangement.json.", ""]
+        if arrangement.get("harmony_kept"):
+            readme += ["Harmony was kept with the retained melodic parts.",
+                       "The exact chord timing and notes are in arrangement.json and the saved MIDI.", ""]
         (staging / "START HERE.txt").write_text("\n".join(readme), encoding="utf-8")
         report = {"schema_version": 1, "genre": arrangement["genre"],
                   "seed": arrangement["seed"], "audio": preview_report,

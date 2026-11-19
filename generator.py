@@ -7,16 +7,18 @@ than many other DAWs. The drum map is the custom 32-pad map, not General MIDI.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import itertools
 import json
 import math
 from pathlib import Path
 import random
-import re
 import shutil
 import struct
 import tempfile
+
+from harmony import KEYS, SCALES, CHORDS, NOTE_NAMES, build_progression, validate_progression
 
 BASE = Path(__file__).resolve().parent
 PPQ = 480
@@ -27,26 +29,11 @@ DRUM_MAP = {"kick": 36, "snare": 40, "clap": 44, "closed_hat": 48,
             "open_hat": 52, "ride": 56, "shaker": 60, "tom": 64}
 GM_DRUM_MAP = {"kick": 36, "snare": 38, "clap": 39, "closed_hat": 42,
                "open_hat": 46, "ride": 51, "shaker": 70, "tom": 45}
-KEYS = {"C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3,
-        "E": 4, "F": 5, "F#": 6, "Gb": 6, "G": 7, "G#": 8,
-        "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11}
-SCALES = {"major": (0, 2, 4, 5, 7, 9, 11), "minor": (0, 2, 3, 5, 7, 8, 10),
-          "dorian": (0, 2, 3, 5, 7, 9, 10), "mixolydian": (0, 2, 4, 5, 7, 9, 10),
-          "harmonic_minor": (0, 2, 3, 5, 7, 8, 11)}
-CHORDS = {"": (0, 4, 7), "m": (0, 3, 7), "dim": (0, 3, 6),
-          "aug": (0, 4, 8), "sus2": (0, 2, 7), "sus4": (0, 5, 7),
-          "5": (0, 7), "6": (0, 4, 7, 9), "m6": (0, 3, 7, 9),
-          "7": (0, 4, 7, 10), "maj7": (0, 4, 7, 11), "m7": (0, 3, 7, 10),
-          "m7b5": (0, 3, 6, 10), "dim7": (0, 3, 6, 9),
-          "add9": (0, 4, 7, 14), "madd9": (0, 3, 7, 14),
-          "9": (0, 4, 7, 10, 14), "maj9": (0, 4, 7, 11, 14),
-          "m9": (0, 3, 7, 10, 14), "11": (0, 4, 7, 10, 14, 17),
-          "m11": (0, 3, 7, 10, 14, 17), "13": (0, 4, 7, 10, 14, 21)}
-NOTE_NAMES = ("C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B")
 DEFAULT_CONFIG = {"genre": "house", "key": "A", "mode": "minor", "bpm": None,
                   "progression": "", "seed": 42, "density": 0.5, "swing": None,
                   "variation": 0.3, "drum_variants": True, "chord_style": "block",
-                  "lead_style": "lead", "muted_roles": []}
+                  "lead_style": "lead", "muted_roles": [], "auto_chords": False,
+                  "chord_creativity": .5}
 
 
 def _load_recipes():
@@ -101,6 +88,9 @@ def validate_config(config):
     c["swing"] = _number(r["swing"] if c["swing"] is None else c["swing"], "Swing", 0, 0.6)
     c["density"] = _number(c["density"], "Density", 0.1, 1)
     c["variation"] = _number(c["variation"], "Variation", 0, 1)
+    c["chord_creativity"] = _number(c["chord_creativity"], "Chord creativity", 0, 1)
+    if not isinstance(c["auto_chords"], bool):
+        raise ValueError("auto_chords must be true or false.")
     if isinstance(c["seed"], bool) or not isinstance(c["seed"], int) or not 0 <= c["seed"] <= 2147483647:
         raise ValueError("Seed must be an integer from 0 to 2147483647.")
     if not isinstance(c["drum_variants"], bool):
@@ -118,34 +108,7 @@ def validate_config(config):
 
 
 def _progression(c):
-    tokens = re.split(r"[\s,|]+", c["progression"].strip())
-    if len(tokens) not in (1, 2, 4, 8):
-        raise ValueError("Enter 1, 2, 4, or 8 chords/degrees; they divide the eight bars equally.")
-    scale = SCALES[c["mode"]]
-    tonic = KEYS[c["key"]]
-    result = []
-    for i, token in enumerate(tokens):
-        if re.fullmatch(r"[1-7]", token):
-            d = int(token) - 1
-            root = (tonic + scale[d]) % 12
-            pcs = [(tonic + scale[(d + n) % 7]) % 12 for n in (0, 2, 4)]
-            intervals = tuple((pc-root) % 12 for pc in pcs)
-            suffix = next((q for q in ("", "m", "dim", "aug") if CHORDS[q] == intervals), "")
-            symbol = NOTE_NAMES[root] + suffix
-        else:
-            match = re.fullmatch(r"([A-Ga-g])([#b]?)(maj9|madd9|add9|maj7|m7b5|dim7|sus2|sus4|m11|m9|m7|m6|dim|aug|m|13|11|9|7|6|5)?", token)
-            if not match:
-                raise ValueError(f"Unknown chord '{token}'. Use degrees 1–7 or symbols such as Am, Fmaj7, G7, Dsus2.")
-            note = match[1].upper() + match[2]
-            if note not in KEYS:
-                raise ValueError(f"Unsupported chord root '{note}'. Use its enharmonic equivalent.")
-            root = KEYS[note]
-            suffix = match[3] or ""
-            pcs = list(dict.fromkeys((root + n) % 12 for n in CHORDS[suffix]))
-            symbol = note + suffix
-        result.append({"bar": i * (8 // len(tokens)), "bars": 8 // len(tokens),
-                       "symbol": symbol, "root": 48 + root, "pitch_classes": pcs})
-    return result
+    return build_progression(c)
 
 
 def _rng(c, role):
@@ -389,6 +352,65 @@ def _drums(c, r):
     return notes
 
 
+def _chord_start(chord):
+    return round(chord["bar"] * 4 * PPQ) / PPQ
+
+
+def _chord_end(chord):
+    return round((chord["bar"] + chord["bars"]) * 4 * PPQ) / PPQ
+
+
+def _chord_index(progression, onset):
+    # Resolve after swing and tick rounding, not before, so a displaced note
+    # cannot accidentally use the previous chord at a rapid harmonic change.
+    tick = round(onset * PPQ)
+    return next(i for i, ch in enumerate(progression)
+                if round(ch["bar"] * 4 * PPQ) <= tick
+                < round((ch["bar"] + ch["bars"]) * 4 * PPQ))
+
+
+def _common_tone_tails(notes, progression, creativity):
+    """Carry only shared tones; merge repeated pitches into unambiguous ties.
+
+    A voice common to consecutive chords may ring through the transition.
+    New chord roots and changing voices still arrive on time. Identical MIDI
+    pitches become one held note rather than overlapping note-on/off pairs.
+    """
+    amount = max(0.0, (creativity - .35) / .65)
+    if not amount:
+        return notes
+    for chord, following in zip(progression, progression[1:]):
+        start, boundary = _chord_start(chord), _chord_end(chord)
+        shared = set(chord["pitch_classes"]) & set(following["pitch_classes"])
+        if not shared:
+            continue
+        tail = min(.125 + amount * .625, (_chord_end(following) - boundary) * .45)
+        tail = round(tail * 96) / 96
+        # One common voice appears first; higher settings carry more voices.
+        latest = {}
+        for note in notes:
+            if start <= note["start"] < boundary and note["pitch"] % 12 in shared:
+                latest[note["pitch"]] = note
+        candidates = sorted(latest.values(), key=lambda n: (n["pitch"] % 12 != chord["root"] % 12, n["pitch"]))
+        count = min(len(candidates), max(1, math.ceil(len(candidates) * amount)))
+        for note in candidates[:count]:
+            # Rhythmic stabs may have stopped early: sustain selected common
+            # voices into the next chord as the creativity control rises.
+            note["duration"] = boundary + tail - note["start"]
+            note["tie_boundaries"] = [boundary]
+    merged, last = [], {}
+    for note in sorted(notes, key=lambda n: (n["start"], n["pitch"])):
+        old = last.get(note["pitch"])
+        if (old is not None and old.get("tie_boundaries")
+                and old["start"] + old["duration"] >= note["start"] - .5 / PPQ):
+            old["duration"] = max(old["start"] + old["duration"], note["start"] + note["duration"]) - old["start"]
+            old["tie_boundaries"] = sorted(set(old["tie_boundaries"] + note.get("tie_boundaries", [])))
+            continue
+        merged.append(note)
+        last[note["pitch"]] = note
+    return merged
+
+
 def _melody(c, r, progression, role):
     rng = _rng(c, role+":velocity")
     rhythm_rng, pitch_rng = _rng(c, role+":rhythm"), _rng(c, role+":pitch")
@@ -418,73 +440,95 @@ def _melody(c, r, progression, role):
     arp_a, arp_b = pitch_rng.choice(arp_vocabulary), pitch_rng.choice(arp_vocabulary)
     arp_orders = (arp_a, arp_a, arp_b, arp_a)
     gate = pitch_rng.choice((.55, .7, .85))
-    voice = None
-    for chord in progression:
-        start, length = chord["bar"]*4, chord["bars"]*4
-        pcs = chord["pitch_classes"]
-        root_pc = chord["root"] % 12
-        if role in ("PAD", "CHORDS"):
-            voice = _voicing(pcs, voice)
-        if role == "PAD":
-            for p in voice:
-                _add(notes, start, length-.04, p, 47+rng.randint(-3,3))
-            continue
-        if role == "CHORDS" and c["chord_style"] == "block":
-            for p in voice:
-                _add(notes, start, length-.10, p, 64+rng.randint(-3,3))
-            continue
+    # New sub-bar harmony uses the common 96-PPQ grid shared by the FLP and
+    # MIDI exporters. Legacy bar-aligned manual ideas retain their 480 grid.
+    sub_bar = c["auto_chords"] or any(abs(ch["bar"] - round(ch["bar"])) > 1e-8 for ch in progression)
+    grid = 96 if sub_bar else PPQ
+    voices, voice = [], None
+    voice_rng = _rng(c, role + ":voicing")
+    if role in ("PAD", "CHORDS"):
+        for chord in progression:
+            center = 61
+            if c["auto_chords"]:
+                center += voice_rng.choice((-2, 0, 2)) * c["chord_creativity"]
+            voice = _voicing(chord["pitch_classes"], voice, center=center)
+            voices.append(voice)
+    sustained = role == "PAD" or (role == "CHORDS" and c["chord_style"] == "block")
+    if sustained:
+        for index, chord in enumerate(progression):
+            start, end = _chord_start(chord), _chord_end(chord)
+            gap = .04 if role == "PAD" else .10
+            for pitch in voices[index]:
+                duration = max(1 / grid, end - start - min(gap, (end-start) / 8))
+                duration = max(1 / grid, round(duration * grid) / grid)
+                _add(notes, start, min(end-start, duration), pitch,
+                     (47 if role == "PAD" else 64) + rng.randint(-3, 3))
+    else:
+        # Compose all rhythmic attacks before assigning harmony. A rhythm can
+        # span any number of chords; no integer-bar loop limits chord counts.
+        hits = {}
+        for bar in range(BARS):
+            local_hits = [h % 4 for h in phrases[bar//2] if int(h//4) == bar % 2]
+            for j, hit in enumerate(local_hits):
+                nominal = bar * 4 + hit
+                onset = round(_swing(nominal, c["swing"]) * grid) / grid
+                if onset < BEATS:
+                    hits[onset] = (nominal, j)
         if role == "SUB_BASS":
-            pitch = _near(root_pc, 33, 24, 43)
-            for offset in range(0, length, 4):
-                _add(notes, start+offset, 3.75, pitch, 75)
-            continue
-        for local_bar in range(chord["bars"]):
-            bar_start = start + local_bar*4
-            bar = int(bar_start//4)
-            phrase = phrases[bar//2]
-            hits = [h % 4 for h in phrase if int(h//4) == bar % 2]
-            if role == "BASS":
-                pitch = _near(root_pc, 45, 36, 55)
-                for j, hit in enumerate(hits):
-                    next_hit = hits[j+1] if j+1 < len(hits) else 4
-                    duration = min(.65, (next_hit-hit)*gate)
-                    _add(notes, _swing(bar_start+hit,c["swing"]), max(.1,duration), pitch, 85+rng.randint(-4,4))
+            hits = {float(beat): (float(beat), 0) for beat in range(0, BEATS, 4)}
+        for chord in progression:
+            start, end = _chord_start(chord), _chord_end(chord)
+            if (role == "SUB_BASS" or (role == "BASS" and sub_bar)
+                    or not any(start <= hit < end for hit in hits)):
+                hits.setdefault(start, (start, 0))
+        attacks = sorted(hits)
+        for attack_index, onset in enumerate(attacks):
+            nominal, phrase_index = hits[onset]
+            chord_index = _chord_index(progression, onset)
+            chord = progression[chord_index]
+            pcs, root_pc = chord["pitch_classes"], chord["root"] % 12
+            end = _chord_end(chord)
+            next_onset = attacks[attack_index+1] if attack_index+1 < len(attacks) else BEATS
+            bar = min(7, int(nominal // 4))
+            available = min(next_onset, end) - onset
+            if available < .5 / grid:
+                continue
+            if role in ("BASS", "SUB_BASS"):
+                pitch = _near(root_pc, 33 if role == "SUB_BASS" else 45,
+                              24 if role == "SUB_BASS" else 36,
+                              43 if role == "SUB_BASS" else 55)
+                duration = min(3.75, available * .97) if role == "SUB_BASS" else min(.65, max(.1, available * gate))
+                velocity = 75 if role == "SUB_BASS" else 85 + rng.randint(-4, 4)
+                pitches = [pitch]
             elif role == "CHORDS":
-                for hit in hits:
-                    for p in voice:
-                        _add(notes, _swing(bar_start+hit,c["swing"]), .32, p, 62+rng.randint(-3,3))
+                pitches, duration = voices[chord_index], .32
+                velocity = 62 + rng.randint(-3, 3)
             elif role == "ARPEGGIO":
-                arp_order = arp_orders[bar//2]
-                for j, hit in enumerate(hits):
-                    idx = arp_order[j % len(arp_order)] % len(pcs)
-                    p = _near(pcs[idx],72,60,84)
-                    next_hit = hits[j+1] if j+1 < len(hits) else 4
-                    duration = min(.3, r["arp_step"]*.65, (next_hit-hit)*.65)
-                    _add(notes,_swing(bar_start+hit,c["swing"]),duration,p,46+(j%3)*3)
+                order = arp_orders[bar//2]
+                # At richer settings the arp can address added upper tones.
+                index = order[phrase_index % len(order)]
+                if c["auto_chords"] and len(pcs) > 3:
+                    index = (index + (phrase_index // len(order))) % len(pcs)
+                pitches = [_near(pcs[index % len(pcs)], 72, 60, 84)]
+                duration = min(.3, r["arp_step"] * .65, available * .65)
+                velocity = 46 + (phrase_index % 3) * 3
             else:
-                for j, hit in enumerate(hits):
-                    contour = phrase_contours[bar//2]
-                    degree = contour[min(15, int(((bar % 2)*4+hit)*2))]
-                    if bar == 7 and j == len(hits)-1:
-                        degree = 0  # Resolve to the current chord's root.
-                    pc = pcs[degree % len(pcs)]
-                    root = _near(root_pc, 65 if role == "LEAD" else 72, 60, 76)
-                    target = root + (degree//len(pcs))*12 + (pc-root_pc) % 12
-                    p = _near(pc,target,60 if role=="LEAD" else 64,83 if role=="LEAD" else 88)
-                    next_hit = hits[j+1] if j+1<len(hits) else 4
-                    length_limit = .2 if role == "PLUCK" or c["lead_style"] == "pluck" else 1.35
-                    duration = min(length_limit,max(.1,(next_hit-hit)*gate))
-                    _add(notes,_swing(bar_start+hit,c["swing"]),duration,p,(76 if role=="LEAD" else 58)+rng.randint(-4,4))
-    # Notes stop at harmonic boundaries, including swung late-bar pickups.
-    for note in notes:
-        chord = next(ch for ch in progression if ch["bar"]*4 <= note["start"] < (ch["bar"]+ch["bars"])*4)
-        note["duration"] = min(note["duration"], (chord["bar"]+chord["bars"])*4-note["start"])
-    if role in ("BASS", "SUB_BASS", "LEAD", "PLUCK", "ARPEGGIO"):
-        # Swing can shorten the gap to the next straight attack. Keep these
-        # lines monophonic even when the following note has a different pitch.
-        ordered = sorted(notes, key=lambda n: n["start"])
-        for note, following in zip(ordered, ordered[1:]):
-            note["duration"] = min(note["duration"], following["start"]-note["start"])
+                contour = phrase_contours[bar//2]
+                degree = contour[min(15, int((nominal % 8) * 2))]
+                if attack_index == len(attacks)-1:
+                    degree = 0
+                pc = pcs[degree % len(pcs)]
+                root = _near(root_pc, 65 if role == "LEAD" else 72, 60, 76)
+                target = root + (degree // len(pcs)) * 12 + (pc-root_pc) % 12
+                pitches = [_near(pc, target, 60 if role == "LEAD" else 64, 83 if role == "LEAD" else 88)]
+                limit = .2 if role == "PLUCK" or c["lead_style"] == "pluck" else 1.35
+                duration = min(limit, max(.1, available * gate))
+                velocity = (76 if role == "LEAD" else 58) + rng.randint(-4, 4)
+            duration = min(available, max(1 / grid, round(duration * grid) / grid))
+            for pitch in pitches:
+                _add(notes, onset, duration, pitch, velocity)
+    if c["auto_chords"] and role in ("PAD", "CHORDS"):
+        notes = _common_tone_tails(notes, progression, c["chord_creativity"])
     return notes
 
 
@@ -508,11 +552,16 @@ def _clean_notes(notes):
     return result
 
 
-def generate(config=None):
-    """Return a fresh eight-bar arrangement. All starts/durations are in beats."""
+def generate(config=None, *, progression_override=None):
+    """Create eight bars; optional exact harmony supports kept melodic parts.
+
+    All note starts/durations are in beats. An override is deep-copied and
+    validated, so callers can preserve one saved harmonic timeline safely.
+    """
     c = validate_config(config or {})
     r = GENRES[c["genre"]]
-    progression = _progression(c)
+    progression = _progression(c) if progression_override is None else copy.deepcopy(progression_override)
+    validate_progression(progression)
     channels = {"DRUMS":9,"PAD":0,"PLUCK":1,"CHORDS":2,"ARPEGGIO":3,
                 "LEAD":4,"BASS":5,"SUB_BASS":6,"NOISE":7}
     programs = {"DRUMS":None,"PAD":89,"PLUCK":10,"CHORDS":0,"ARPEGGIO":81,
@@ -528,7 +577,8 @@ def generate(config=None):
             notes = _melody(c,r,progression,role)
         tracks.append({"role":role,"channel":channels[role],"program":programs[role],
                        "muted":role in c["muted_roles"],"notes":_clean_notes(notes)})
-    arrangement = {"schema_version":1,"bars":BARS,"beats_per_bar":4,"ppq":PPQ,
+    arrangement = {"schema_version":1,"engine_version":"3.0-chord-creativity",
+                   "bars":BARS,"beats_per_bar":4,"ppq":PPQ,
                    "bpm":c["bpm"],"key":c["key"],"mode":c["mode"],"seed":c["seed"],
                    "genre":c["genre"],"config":c,"progression":progression,"tracks":tracks,
                    "drum_map":DRUM_MAP,
@@ -541,6 +591,7 @@ def validate_arrangement(a):
     if a.get("bars") != 8 or a.get("beats_per_bar") != 4 or a.get("ppq") != PPQ:
         raise ValueError("This version requires eight bars of 4/4 at 480 PPQ.")
     _number(a.get("bpm"),"BPM",30,300)
+    validate_progression(a.get("progression"))
     roles = [t["role"] for t in a["tracks"]]
     if sorted(roles) != sorted(ROLES):
         raise ValueError("Arrangement must contain each of the nine roles once.")
@@ -593,7 +644,7 @@ def midi_bytes(arrangement, tracks=None, gm_drums=False):
                  (0,1,_meta(0x51,round(60000000/arrangement["bpm"]).to_bytes(3,"big"))),
                  (0,2,_meta(0x58,bytes([4,2,24,8])))]
     for chord in arrangement["progression"]:
-        conductor.append((chord["bar"]*4*PPQ,3,_meta(6,chord["symbol"].encode("utf-8"))))
+        conductor.append((round(chord["bar"]*4*PPQ),3,_meta(6,chord["symbol"].encode("utf-8"))))
     chunks = [_chunk(conductor)]
     for track in tracks:
         events = [(0,0,_meta(3,track["role"].encode("ascii")))]
@@ -667,6 +718,10 @@ def main():
     parser.add_argument("--mode",choices=tuple(SCALES))
     parser.add_argument("--bpm",type=float)
     parser.add_argument("--progression")
+    parser.add_argument("--auto-chords", action="store_true", default=None,
+                        help="Generate a new chord progression from the seed.")
+    parser.add_argument("--chord-creativity", type=float,
+                        help="0 to 1: more changes, richer harmony and common-tone overlaps.")
     parser.add_argument("--seed",type=int)
     args = parser.parse_args()
     if args.list_genres:
@@ -674,7 +729,7 @@ def main():
             print(f"{slug:22s} {recipe['bpm']:3d} BPM  {recipe['label']}")
         return
     config = json.loads(args.settings.read_text(encoding="utf-8")) if args.settings else {}
-    for name in ("genre","key","mode","bpm","progression","seed"):
+    for name in ("genre","key","mode","bpm","progression","seed","auto_chords","chord_creativity"):
         value = getattr(args,name)
         if value is not None:
             config[name] = value

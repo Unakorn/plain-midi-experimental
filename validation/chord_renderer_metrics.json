@@ -1,0 +1,135 @@
+{
+  "engine_version": "3.0-chord-creativity",
+  "settings": "20 seeds per genre; auto chords; creativity1; otherdefaults",
+  "timing_caveat": "Generation only; excludes kit copying, disk export, preview and FLP writing.",
+  "genres": {
+    "trance": {
+      "mean_generation_ms": 24.77,
+      "max_generation_ms": 32.4,
+      "chords_min_max": [
+        24,
+        32
+      ],
+      "common_tone_transitions_min_max": [
+        88,
+        152
+      ],
+      "notes_min_max": [
+        510,
+        600
+      ]
+    },
+    "hard_dance": {
+      "mean_generation_ms": 23.59,
+      "max_generation_ms": 33.08,
+      "chords_min_max": [
+        24,
+        31
+      ],
+      "common_tone_transitions_min_max": [
+        90,
+        134
+      ],
+      "notes_min_max": [
+        479,
+        566
+      ]
+    },
+    "hard_trance": {
+      "mean_generation_ms": 24.36,
+      "max_generation_ms": 29.38,
+      "chords_min_max": [
+        24,
+        31
+      ],
+      "common_tone_transitions_min_max": [
+        94,
+        138
+      ],
+      "notes_min_max": [
+        513,
+        607
+      ]
+    },
+    "house": {
+      "mean_generation_ms": 21.01,
+      "max_generation_ms": 27.29,
+      "chords_min_max": [
+        24,
+        32
+      ],
+      "common_tone_transitions_min_max": [
+        94,
+        142
+      ],
+      "notes_min_max": [
+        456,
+        528
+      ]
+    },
+    "hard_house": {
+      "mean_generation_ms": 21.68,
+      "max_generation_ms": 29.93,
+      "chords_min_max": [
+        24,
+        32
+      ],
+      "common_tone_transitions_min_max": [
+        78,
+        160
+      ],
+      "notes_min_max": [
+        482,
+        555
+      ]
+    },
+    "hardstyle": {
+      "mean_generation_ms": 22.83,
+      "max_generation_ms": 30.52,
+      "chords_min_max": [
+        24,
+        32
+      ],
+      "common_tone_transitions_min_max": [
+        94,
+        160
+      ],
+      "notes_min_max": [
+        417,
+        518
+      ]
+    },
+    "pop": {
+      "mean_generation_ms": 29.08,
+      "max_generation_ms": 53.42,
+      "chords_min_max": [
+        24,
+        32
+      ],
+      "common_tone_transitions_min_max": [
+        70,
+        138
+      ],
+      "notes_min_max": [
+        438,
+        521
+      ]
+    },
+    "rap": {
+      "mean_generation_ms": 22.6,
+      "max_generation_ms": 27.72,
+      "chords_min_max": [
+        24,
+        32
+      ],
+      "common_tone_transitions_min_max": [
+        76,
+        134
+      ],
+      "notes_min_max": [
+        398,
+        513
+      ]
+    }
+  }
+}

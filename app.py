@@ -27,8 +27,8 @@ class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Plain MIDI — eight bars, your way")
-        self.root.geometry("1100x840")
-        self.root.minsize(920, 760)
+        self.root.geometry("1100x900")
+        self.root.minsize(1000, 840)
         self.root.configure(bg=COLORS["bg"])
         self.events = queue.Queue()
         self.busy = False
@@ -41,12 +41,14 @@ class App:
             "progression": tk.StringVar(value=GENRES["house"]["progression"]), "seed": tk.StringVar(value="42"),
             "density": tk.DoubleVar(value=.5), "swing": tk.DoubleVar(value=GENRES["house"]["swing"]),
             "variation": tk.DoubleVar(value=.3), "chord_style": tk.StringVar(value="block"),
+            "auto_chords": tk.BooleanVar(value=True), "chord_creativity": tk.DoubleVar(value=.5),
             "lead_style": tk.StringVar(value="lead"), "drum_variants": tk.BooleanVar(value=True),
         }
         self.keep = {role: tk.BooleanVar(value=False) for role in ROLE_LABELS}
         self.last_genre = "house"
         self.status = tk.StringVar(value="Choose a genre and generate. All nine parts arrive together.")
         self.chords = tk.StringVar(value="One progression. Different jobs for each instrument.")
+        self.harmony_hint = tk.StringVar()
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("TFrame", background=COLORS["bg"])
@@ -87,15 +89,16 @@ class App:
                 widget.bind("<<ComboboxSelected>>", self.change_genre)
         row = ttk.Frame(outer)
         row.pack(fill="x")
-        ttk.Label(row, text="Progression", style="Small.TLabel").pack(side="left", padx=(0, 10))
-        ttk.Entry(row, textvariable=self.var["progression"], width=26).pack(side="left")
-        ttk.Label(row, text="Degrees or names: 1 6 3 7 / Am F C G", style="Small.TLabel").pack(side="left", padx=12)
+        ttk.Checkbutton(row, text="Generate chords", variable=self.var["auto_chords"]).pack(side="left", padx=(0, 12))
+        ttk.Label(row, text="Manual sequence", style="Small.TLabel").pack(side="left", padx=(0, 8))
+        self.progression_entry = ttk.Entry(row, textvariable=self.var["progression"], width=32)
+        self.progression_entry.pack(side="left", fill="x", expand=True, padx=(0, 12))
         ttk.Label(row, text="Seed", style="Small.TLabel").pack(side="left", padx=(8, 6))
         ttk.Entry(row, textvariable=self.var["seed"], width=10).pack(side="left")
         ttk.Checkbutton(row, text="Repeat seed", variable=self.repeat_seed).pack(side="left", padx=(10, 0))
         knobs = ttk.Frame(outer)
         knobs.pack(fill="x", pady=(16, 8))
-        for i, (label, key, maximum) in enumerate([("Density", "density", 1), ("Swing", "swing", .6), ("Variation", "variation", 1)]):
+        for i, (label, key, maximum) in enumerate([("Chord creativity", "chord_creativity", 1), ("Density", "density", 1), ("Swing", "swing", .6), ("Phrase variation", "variation", 1)]):
             knobs.columnconfigure(i, weight=1)
             panel = ttk.Frame(knobs)
             panel.grid(row=0, column=i, sticky="ew", padx=(0, 18))
@@ -105,9 +108,20 @@ class App:
             self.var[key].trace_add("write", refresh)
             refresh()
             ttk.Label(panel, textvariable=number, style="Small.TLabel").pack(anchor="w")
-            ttk.Scale(panel, from_=.1 if key == "density" else 0, to=maximum, variable=self.var[key]).pack(fill="x")
+            slider = ttk.Scale(panel, from_=.1 if key == "density" else 0, to=maximum, variable=self.var[key])
+            slider.pack(fill="x")
+            if key == "chord_creativity":
+                self.chord_slider = slider
+        ttk.Label(outer, textvariable=self.harmony_hint, style="Small.TLabel", wraplength=1000).pack(anchor="w", pady=(0, 7))
+        self.var["auto_chords"].trace_add("write", self.refresh_harmony_controls)
+        self.var["chord_creativity"].trace_add("write", self.refresh_harmony_controls)
+        for flag in self.keep.values():
+            flag.trace_add("write", self.refresh_harmony_controls)
+        self.refresh_harmony_controls()
         ttk.Checkbutton(outer, text="Use the other drum sounds for accents and fills", variable=self.var["drum_variants"]).pack(anchor="w")
-        ttk.Label(outer, textvariable=self.chords, foreground=COLORS["accent"], font=("Segoe UI", 12, "bold")).pack(anchor="w", pady=(18, 8))
+        self.chord_label = ttk.Label(outer, textvariable=self.chords, foreground=COLORS["accent"], font=("Segoe UI", 11, "bold"), wraplength=1000)
+        self.chord_label.pack(anchor="w", fill="x", pady=(12, 8))
+        outer.bind("<Configure>", lambda event: self.chord_label.configure(wraplength=max(800, event.width-48)))
         self.canvas = tk.Canvas(outer, height=240, bg=COLORS["panel"], highlightthickness=1, highlightbackground=COLORS["line"])
         self.canvas.pack(fill="both", expand=True)
         self.canvas.bind("<Configure>", lambda event: self.draw())
@@ -155,6 +169,22 @@ class App:
         if self.var["progression"].get() == GENRES[self.last_genre]["progression"]:
             self.var["progression"].set(GENRES[key]["progression"])
         self.last_genre = key
+
+    def refresh_harmony_controls(self, *args):
+        automatic = self.var["auto_chords"].get()
+        self.progression_entry.configure(state="disabled" if automatic else "normal")
+        self.chord_slider.configure(state="normal" if automatic else "disabled")
+        if not automatic:
+            hint = "Manual: enter 1–32 degrees or chord names, e.g. 1 6 3 7 or Am F C G. They fill eight bars."
+        elif any(flag.get() for role, flag in self.keep.items() if role not in ("DRUMS", "NOISE")):
+            hint = "Kept melodic parts also keep their harmony. Uncheck them to explore new chords or creativity settings."
+        elif self.var["chord_creativity"].get() < .3:
+            hint = "Simple harmony: a fresh progression on each generation. Raise Chord creativity for more changes and color."
+        elif self.var["chord_creativity"].get() < .55:
+            hint = "Richer harmony: more chord changes, sevenths and ninths, with connected voicings across eight bars."
+        else:
+            hint = "Adventurous harmony: up to 32 changes, borrowed chords and shared-note overlaps. Some notes can leave the base scale."
+        self.harmony_hint.set(hint)
 
     def configuration(self):
         config = {k: value.get() for k, value in self.var.items()}
@@ -216,7 +246,7 @@ class App:
                 else:
                     self.result = payload
                     arrangement = payload["arrangement"]
-                    self.chords.set("  →  ".join(p["symbol"] for p in arrangement["progression"]))
+                    self.chords.set(f"{len(arrangement['progression'])} chords / 8 bars   ·   " + "  →  ".join(p["symbol"] for p in arrangement["progression"]))
                     notes = sum(len(t["notes"]) for t in arrangement["tracks"])
                     self.status.set(f"Saved to Desktop: {Path(payload['project']).name}")
                     self.folder_button.configure(state="normal")
@@ -241,6 +271,12 @@ class App:
             self.canvas.create_line(x, top - 3, x, height - 8, fill=COLORS["line"])
             if bar < 8:
                 self.canvas.create_text(x + 5, 12, anchor="w", text=f"{bar+1}", fill=COLORS["muted"], font=("Segoe UI", 9))
+        if self.result:
+            for chord in self.result["arrangement"]["progression"]:
+                beat = chord["bar"] * 4
+                if beat % 4:
+                    x = left + usable * beat / 32
+                    self.canvas.create_line(x, top, x, height - 8, fill="#354a46", dash=(2, 4))
         for index, (role, label) in enumerate(ROLE_LABELS.items()):
             y = top + index * row_height
             color = PALETTE[index]

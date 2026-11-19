@@ -12,7 +12,9 @@ def main():
     p.add_argument("--key", default="A")
     p.add_argument("--mode", choices=["major", "minor"], default="minor")
     p.add_argument("--bpm", type=float)
-    p.add_argument("--progression", default="", help="1, 2, 4, or 8 scale degrees; blank uses the genre default.")
+    p.add_argument("--progression", default="", help="1–32 chord names or scale degrees; used when --auto-chords is off.")
+    p.add_argument("--auto-chords", action="store_true", help="Generate fresh shared harmony from the seed.")
+    p.add_argument("--chord-creativity", type=float, default=.5, help="0–1: more changes, richer chords and shared-note overlaps (with --auto-chords).")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--density", type=float, default=.5)
     p.add_argument("--swing", type=float, default=None)
@@ -26,7 +28,7 @@ def main():
     p.add_argument("--no-flp", action="store_true")
     p.add_argument("--config", type=Path, help="Load saved generation settings from JSON, overriding the options above.")
     args = p.parse_args()
-    config = {k: getattr(args, k) for k in ["genre", "key", "mode", "progression", "seed", "density", "swing", "variation", "chord_style", "lead_style"]}
+    config = {k: getattr(args, k) for k in ["genre", "key", "mode", "progression", "auto_chords", "chord_creativity", "seed", "density", "swing", "variation", "chord_style", "lead_style"]}
     config["drum_variants"] = not args.base_drums
     if args.bpm is not None:
         config["bpm"] = args.bpm

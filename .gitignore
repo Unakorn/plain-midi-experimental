@@ -17,3 +17,5 @@ Plain MIDI Files/
 *.fst
 *.zip
 Desktop example.json
+/harmony_metrics.json
+/variety_v2_metrics.json
