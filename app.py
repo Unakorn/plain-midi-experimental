@@ -175,7 +175,7 @@ class App:
         self.progression_entry.configure(state="disabled" if automatic else "normal")
         self.chord_slider.configure(state="normal" if automatic else "disabled")
         if not automatic:
-            hint = "Manual: enter 1–32 degrees or chord names, e.g. 1 6 3 7 or Am F C G. They fill eight bars."
+            hint = "Manual: enter up to 32 chords using scale degrees 1–7 or names, e.g. 1 6 3 7 or Am F C G. They fill eight bars."
         elif any(flag.get() for role, flag in self.keep.items() if role not in ("DRUMS", "NOISE")):
             hint = "Kept melodic parts also keep their harmony. Uncheck them to explore new chords or creativity settings."
         elif self.var["chord_creativity"].get() < .3:

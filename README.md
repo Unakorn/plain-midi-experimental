@@ -73,6 +73,8 @@ The exact count depends on the seed. Raising creativity for the same seed refine
 
 **Manual harmony:** turn Generate chords off and enter any 1–32 scale degrees, such as `1 6 3 7`, or explicit chords such as `Am F C G`. The chords divide the eight bars as evenly as the shared MIDI/FLP timing grid permits. Basic triads, suspended chords, sevenths, and several extensions are supported; `CHORDS` in `harmony.py` lists them. The manual field is ignored in generated mode. Chord creativity applies to generated mode; manual harmony is kept exact. CLI calls remain manual by default for compatibility; add `--auto-chords` for automatic harmony.
 
+Scale-degree values run from **1–7**. The chord count is the number of entries you type: an eight-chord sequence contains eight entries; entering `8` as a degree is invalid.
+
 Density controls how busy parts get; swing delays offbeat positions; phrase variation adds alternate rhythmic endings and details. These are separate from chord creativity. New seeds change rhythms and melodies even at zero phrase variation. Keeping any melodic part also keeps the exact generated chord timeline, so newly generated parts still fit. Uncheck kept melodic parts before changing genre, key, scale, chord mode or chord creativity. Keeping drums alone allows new harmony.
 
 The same settings and seed reproduce a generated idea within one engine version. Exact notes are saved in `arrangement.json`; use its saved MIDI to retain any manually edited or previously kept parts. Loading a JSON file through `--config` reads settings and regenerates notes. Seeds from an older engine can produce different notes after an update, so keep saved MIDI for exact recall.
